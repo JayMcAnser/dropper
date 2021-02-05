@@ -9,6 +9,8 @@ import VueZoomer from 'vue-zoomer';
 Vue.config.productionTip = false
 Vue.use(VueZoomer)
 
+// console.log('env:', process.env.VUE_APP_API_URL)
+
 new Vue({
   router,
   store,

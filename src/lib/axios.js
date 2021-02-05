@@ -6,16 +6,16 @@
  */
 
 import axios from 'axios'
-import {debug, error} from './logging';
+import {debug, error as errorLog} from './logging';
 
 const axiosApi = axios.create({
-  baseURL: (process.env.API_URL !== undefined) ? process.env.API_URL : 'http://localhost:3000',
+  baseURL: process.env.VUE_APP_API_URL,
   headers: {
     'Accept': 'application/json',
     'Content-Type': 'application/json'
   }
 })
-debug(`api server: ${axiosApi.baseURL}`, 'lib/axios')
+debug(`api server: ${axiosApi.defaults.baseURL}`, 'lib/axios')
 
 axios.cancelToken = axios.CancelToken;
 axios.isCancel = axios.isCancel;
@@ -29,23 +29,10 @@ axiosApi.interceptors.request.use(
     return config
   },
   (error) => {
-    error(error, 'lib/axios.interceptor')
+    errorLog(error, 'lib/axios.interceptor')
     return Promise.reject(error)
   }
 )
 
 export default axiosApi;
 
-
-
-
-// export default () => {
-//     return axios.create({
-//         baseURL: 'http://localhost:3000', // process.env.baseURL,
-//         withCredentials: false,
-//         headers: {
-//             'Accept': 'application/json',
-//             'Content-Type': 'application/json'
-//         }
-//     })
-// }
