@@ -8,12 +8,12 @@ git pull
 npm update
 echo "building site"
 cd site
-npm update
+npm update --force
 npm run build
 echo "updating api"
 
 cd ../api
-npm update
+npm update --force
 cd ..
 
 echo "restart pm2"
