@@ -17,4 +17,4 @@ npm update
 cd ..
 
 echo "restart pm2"
-pm2 restart curator
+pm2 restart DropServer
