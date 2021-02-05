@@ -10,6 +10,7 @@ const Path = require('path');
 const Logging = require('./logging');
 const Const = require('./const');
 const Url = require('url');
+const ApiReturn = require('./api-return')
 
 class StaticSite {
   constructor(app) {
@@ -35,6 +36,8 @@ class StaticSite {
       Logging.log('debug', `request ${filename}`)
       if (Fs.existsSync(filename)) {
         res.sendFile(filename)
+      } else if (pathName === '/version') {
+        ApiReturn.result(req, res, `Dropper version ${require('../../site/package.json').version}`)
       } else {
         // if not found, we return the index
         res.sendFile( Path.join(vm._siteRoot, 'index.html'));
