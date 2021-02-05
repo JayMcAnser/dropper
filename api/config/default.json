@@ -1,13 +1,13 @@
 {
   "Server": {
-    "port": 8080,
+    "port": 3050,
     "secretKey": "Dr0pper"
   },
   "Path": {
     "dataRoot": "data",
     "imageRoot": "data/image",
     "logRoot": "logging",
-    "siteRoot": "../curator/dist"
+    "siteRoot": "../site/dist"
   },
   "Logging": [
     { "type": "access", "format":  "dev" },
