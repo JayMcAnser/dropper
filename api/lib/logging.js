@@ -147,6 +147,9 @@ const buildLog = function(logDefinition, app = false) {
  * @param app
  */
 const init = function(app) {
+  if (!Config.has('Logging')) {
+    console.error(`the property Logging is undefined`);
+  }
   let logger = Config.get('Logging');
   this._winston = buildLog(logger, app);
 }
