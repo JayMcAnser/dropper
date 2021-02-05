@@ -7,5 +7,5 @@ git pull
 cd site
 npm run build
 cd ..
-pm2 restart curator
+pm2 restart DropServer
 
