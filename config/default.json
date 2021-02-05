@@ -7,7 +7,7 @@
     "dataRoot": "data",
     "imageRoot": "data/image",
     "logRoot": "logging",
-    "siteRoot": "../site/dist"
+    "siteRoot": "../dist"
   },
   "Logging": [
     { "type": "access", "format":  "dev" },
