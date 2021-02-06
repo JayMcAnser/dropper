@@ -27,7 +27,7 @@
 </template>
 
 <script>
-import { debug} from '../lib/logging';
+// import { debug} from '../lib/logging';
 /**
  * list the board available
  */

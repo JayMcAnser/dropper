@@ -1,7 +1,7 @@
 
-import { axiosActions } from '../lib/const';
-import { debug, warn, error, newError } from '../lib/logging';
-import Axios from '../lib/axios';
+import { axiosActions } from '../vendors/lib/const';
+import { debug, warn, error, newError } from '../vendors/lib/logging';
+import Axios from '../vendors/lib/axios';
 
 
 export const state = () => ({

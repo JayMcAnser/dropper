@@ -17,8 +17,8 @@
 
 import BoardBar from '../components/board-bar.vue'
 import ColumnView from '../components/column-view.vue'
-import ErrorDialog from '../components/error-dialog.vue'
-import {debug, error} from '../lib/logging'
+import ErrorDialog from '../vendors/components/error-dialog.vue'
+import {debug, error} from '../vendors/lib/logging'
 
  
 export default {

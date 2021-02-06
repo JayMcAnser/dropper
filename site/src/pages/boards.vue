@@ -13,7 +13,7 @@
 <script>
 import AppBar from '../components/app-bar.vue'
 import BoardList from '../components/board-list.vue'
-import ErrorDialog from '../components/error-dialog.vue'
+import ErrorDialog from '../vendors/components/error-dialog.vue'
 // import {debug} from '../lib/logging'
 
 export default {

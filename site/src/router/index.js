@@ -1,6 +1,7 @@
 import Vue from 'vue'
 import VueRouter from 'vue-router'
-import Home from '../pages/home.vue'
+import Home from '../pages/home.vue';
+import AuthRoutes from '../vendors/router/auth-route';
 
 Vue.use(VueRouter)
 
@@ -19,11 +20,6 @@ const routes = [
     component: () => import(/* webpackChunkName: "about" */ '../pages/about.vue')
   },
   {
-    path: '/login',
-    name: 'login',
-    component: () => import('../pages/login.vue')
-  },
-  {
     path:'/boards',
     name:'boards',
     component: () => import(/* webpackChunkName: "boards" */ '../pages/boards.vue')
@@ -37,8 +33,8 @@ const routes = [
 
 const router = new VueRouter({
   mode: 'history',
-  base: process.env.BASE_URL,
-  routes
+  base: process.env.BASE_URL,  
+  routes: routes.concat(AuthRoutes)
 })
 
 export default router

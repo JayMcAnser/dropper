@@ -1,0 +1,3 @@
+[submodule "site/src/vendors"]
+	path = site/src/vendors
+	url = git@github.com:JayMcAnser/root-app.git

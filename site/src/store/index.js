@@ -5,8 +5,8 @@ Vue.use(Vuex)
 
 
 import {board} from './board';
-import {auth} from './auth';
-import {status} from './status';
+import {auth} from '../vendors/store/auth';
+import {status} from '../vendors/store/status';
 
 const defaultModule = {    
   state: {
