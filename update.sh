@@ -5,15 +5,15 @@
 git stash
 
 echo ">>> pull repo"
-git pull
+git pull origin master
 
 echo ">>> pull submodule api"
 cd api/vendors
-git pull
+git pull origin master
 cd ../..
 echo ">>> pull submodule site"
 cd site/src/vendors
-git pull
+git pull origin master
 cd ../..
 
 echo ">>> build site"
