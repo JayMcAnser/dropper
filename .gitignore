@@ -2,6 +2,7 @@
 /api/node_modules
 /site/node_modules
 /site/dist
+/dist
 /api/logging
 
 # local env files

@@ -10,7 +10,8 @@ const Path = require('path');
 const Logging = require('./logging');
 const Const = require('./const');
 const Url = require('url');
-const ApiReturn = require('./api-return')
+const ApiReturn = require('./api-return');
+const Mime = require('mime/lite')
 
 class StaticSite {
   constructor(app) {
@@ -35,7 +36,8 @@ class StaticSite {
       let filename = Path.join(vm._siteRoot, pathName);
       Logging.log('debug', `request ${filename}`)
       if (Fs.existsSync(filename)) {
-        res.sendFile(filename)
+        let mimeType = Mime.getType(Path.extname(filename))
+        res.type(mimeType).sendFile(filename)
       } else if (pathName === '/version') {
         ApiReturn.result(req, res, `Dropper version ${require('../../site/package.json').version}`)
       } else {
