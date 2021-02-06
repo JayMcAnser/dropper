@@ -4,9 +4,9 @@
 
 const boardModel = require('../models/board');
 const imageModel = require('../models/image');
-const Const = require('../lib/const');
-const Logging = require('../lib/logging')
-const ApiReturn = require('../lib/api-return');
+const Const = require('../vendors/lib/const');
+const Logging = require('../vendors/lib/logging')
+const ApiReturn = require('../vendors/lib/api-return');
 
 const _getSession = function(req) {
   return {

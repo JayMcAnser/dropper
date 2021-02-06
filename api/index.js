@@ -4,13 +4,18 @@
  */
 const express = require('express');
 const cors = require('cors');
-const Logging = require('./lib/logging');
+const Logging = require('./vendors/lib/logging');
 const bodyParser = require('body-parser');
 const Config = require('config');
-const ApiReturn = require('./lib/api-return');
-const Const = require('./lib/const')
-const StaticSite = require('./lib/static-site');
+const ApiReturn = require('./vendors/lib/api-return');
+const Const = require('./vendors/lib/const')
+const StaticSite = require('./vendors/lib/static-site');
+const Path = require('path');
 
+// set our logging to the root of the config
+const { setRootPath } = require('./vendors/lib/helper');
+
+setRootPath(Path.join(__dirname, Config.get('Path.configRoot')))
 const app = express();
 app.use(cors())
 Logging.init(app)
@@ -24,11 +29,11 @@ app.use(bodyParser.json())
 // });
 
 
-const AuthController = require('./controllers/auth');
+const AuthController = require('./vendors/controllers/auth');
 
-app.use('/api/auth', require('./routes/auth'));
+app.use('/api/auth', require('./vendors/routes/auth'));
 app.use('/api/public',  require('./routes/public'));
-app.use('/api/user',  AuthController.validate,  require('./routes/user'));
+app.use('/api/user',  AuthController.validate,  require('./vendors/routes/user'));
 app.use('/api/board', AuthController.validate,  require('./routes/board'));
 
 app.use('/api/version', function(req, res) {

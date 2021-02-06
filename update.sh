@@ -4,7 +4,9 @@
 
 git stash
 git pull
-cd site
+cd site/src/vendors
+git pull
+cd ../..
 npm run build
 rm -rf ../dist
 mv dist ../dist

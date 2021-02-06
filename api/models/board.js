@@ -9,11 +9,11 @@
 const Config = require('config');
 const Fs = require('fs');
 const Path = require('path');
-const Helper = require('../lib/helper');
+const Helper = require('../vendors/lib/helper');
 const { v4 : uuidv4} = require('uuid');
 const JsonFile = require('jsonfile');
-const Const = require('../lib/const')
-const Logging = require('../lib/logging');
+const Const = require('../vendors/lib/const')
+const Logging = require('../vendors/lib/logging');
 
 const historyActions = {
   imageAdd: 'image.add',

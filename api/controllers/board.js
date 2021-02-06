@@ -1,5 +1,5 @@
 const boardModel = require('../models/board');
-const Const = require('../lib/const');
+const Const = require('../vendors/lib/const');
 
 const _getSession = function(req) {
   return {

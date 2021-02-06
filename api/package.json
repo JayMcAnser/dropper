@@ -1,6 +1,6 @@
 {
   "name": "dropper-api",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "The api for Dropper Curator",
   "main": "index.js",
   "scripts": {
