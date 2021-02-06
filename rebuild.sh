@@ -8,7 +8,7 @@ git pull
 npm update
 
 echo ">>> updating api"
-cd ../api
+cd api
 npm update --force
 cd ..
 
