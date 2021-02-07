@@ -1,25 +1,37 @@
 #!/bin/sh
-# updating import to the latest staging version
-# the testing more
+#
+# updating import to the latest version
 
-echo ">>> retrieving new version"
 git stash
-git pull
-npm update
 
-echo ">>> updating api"
-cd api
+echo ">>> pull repo"
+git pull origin master
+
+echo ">>> pull submodule api"
+cd api/vendors
+git pull origin master
+cd ..
 npm update --force
 cd ..
 
-echo ">>> building site"
-cd site
+
+echo ">>> pull submodule site"
+cd site/src/vendors
+git pull origin master
+cd ..
 npm update --force
+cd ..
+
+echo ">>> build site"
 npm run build
+
+echo ">>> move site to production"
 
 rm -rf ../dist
 mv dist ../dist
 cd ..
 
-echo ">>> restart pm2"
+echo ">>> restart server"
 pm2 restart DropServer
+
+
