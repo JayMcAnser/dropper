@@ -6,6 +6,7 @@ import store from './store'
 import vuetify from './plugins/vuetify';
 import VueZoomer from 'vue-zoomer';
 
+Vue.config.devtools = process.env.NODE_ENV === 'development'
 Vue.config.productionTip = false
 Vue.use(VueZoomer)
 

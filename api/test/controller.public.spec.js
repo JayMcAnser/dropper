@@ -14,7 +14,7 @@ const TEST_BOARD_PUBLIC = 'test.ctrl.public'
 let TEST_BOARD_PUBLIC_ID;
 let TEST_BOARD_PRIVATE_ID;
 const TEST_BOARD_PRIVATE = 'test.ctrl.private'
-const server = 'http://localhost:3000';
+const server = 'http://localhost:3050';
 const ROOT = '/public';
 const Const = require('../lib/const');
 const Path = require('path');

@@ -2,8 +2,12 @@
 import { axiosActions } from '../vendors/lib/const';
 import { debug, warn, error, newError } from '../vendors/lib/logging';
 import Axios from '../vendors/lib/axios';
+import {apiState} from '../vendors/lib/const';
+// import {Headers} from '../vendors/lib/axios';
 
-
+const isNew = (data) => {
+  return data.id === undefined
+}
 export const state = () => ({
   activeColumnIndex: 0,
   boards: [],
@@ -30,19 +34,33 @@ export const mutations = {
   },
   /**
    * update one board to the full list
+   * returns index or false if not found
    */
   setBoard(state, board) {
-//    console.log('Boards:', state.boards)
     let index = state.boards.findIndex( (b) => b.id === board.id);
     if (index < 0) {
       error(`board ${board.id} not found`)
       state.activeBoardIndex = -1
-    } else if (state.activeBoardIndex !== index) {
-      // only change the active index if it changes
-      state.activeColumnIndex = 0;
-      state.activeBoardIndex = index
-    }  
+      return false;
+    } 
     state.boards[index] = board;    
+    return index
+  },
+  activateBoard(state, board) {
+    let index = state.boards.findIndex( (b) => b.id === board.id);
+    if (index !== false) {
+      if (state.activeBoardIndex !== index) {
+        // only change the active index if it changes
+        state.activeColumnIndex = 0;
+        state.activeBoardIndex = index
+      }
+    }  
+  }
+}
+
+const generateHeaders = (rootGetters) => {
+  return  {
+    headers: Headers(rootGetters['auth/authHeader'])
   }
 }
 
@@ -80,9 +98,11 @@ export const actions = {
       // do not reload the board list if not needed
       // if we do, the column(s) getters can return empty values
       // because the columns are not yet loaded.
+      debug(`serving from cache`, FUN)
       return getters.boards
     }
     try {
+      debug(`loading from cache`, FUN)
       let res = await Axios.get('/public/list');
       if (axiosActions.isOk(res)) {
         commit('setBoards', axiosActions.data(res));
@@ -106,12 +126,14 @@ export const actions = {
   async activate({commit, dispatch, getters}, data) {
     const FUN = 'store.board.activate'
     await dispatch('status/clear', '', {root: true})
-    try {
+    try {      
       let url = `/public/openById/${data.id}`
+      await dispatch('status/apiStatus', apiState.waiting)
       let res = await Axios.get(url);   
       if (axiosActions.isOk(res)) {       
-        // let data =  axiosActions.data(res)
+        await dispatch('status/apiStatus', apiState.ready)
         commit('setBoard', axiosActions.data(res));
+        commit('activateBoard', axiosActions.data(res))  
         return getters.active;
       } else if (axiosActions.hasErrors(res)) {
         let err = newError(axiosActions.errors(res), FUN)      
@@ -124,8 +146,58 @@ export const actions = {
       dispatch('status/error', newError(e, FUN), {root: true}) 
       throw e;
     }
+  },
+
+  async open({commit, dispatch}, data) {
+    const FUN = 'store.board.open';
+    await dispatch('status/clear', '', {root: true});
+    try {
+
+      let url = `/public/openById/${data.id}`
+      let res = await Axios.get(url);   
+      if (axiosActions.isOk(res)) {       
+        commit('setBoard', axiosActions.data(res));
+        return axiosActions.data(res)
+      } else if (axiosActions.hasErrors(res)) {
+        let err = newError(axiosActions.errors(res), FUN)      
+        dispatch('status/error', err, {root: true})                
+        return false;
+      } else {
+        warn(axiosActions.data(res), FUN)
+        return axiosActions.data(res)
+      }
+    } catch(e) {
+      dispatch('status/error', newError(e, FUN), {root: true}) 
+      throw e;
+    }
+  },
+
+  async save({commit, dispatch, rootGetters}, data) {
+    const FUN = 'store.board.save';
+    await dispatch('status/clear', '', {root: true});
+    let result;
+    try {
+      Headers(rootGetters['auth/token'])
+      if (isNew(data)) {
+        result = await Axios.post('/board', data);
+      } else {
+        result = await Axios.patch(`board/${data.id}`, data)
+      }
+      if (axiosActions.isOk(result)) {   
+        return  axiosActions.data(result)
+      } else {
+        let err = newError(axiosActions.errors(result), FUN)      
+        dispatch('status/error', err, {root: true})                
+        return false;
+      }
+    } catch(e) {
+      dispatch('status/error', newError(e, FUN), {root: true}) 
+      throw e;
+    }
   }
 }
+
+
 export const getters = {
   boards: state => {
     return state.boards;
@@ -157,7 +229,7 @@ export const getters = {
   },
   publicImageRoot: (state, getters) => {
     return Axios.defaults.baseURL + '/public/image/' + getters.active.id + '/'
-  }
+  },   
 }
 
 export const board = {

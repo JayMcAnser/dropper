@@ -6,7 +6,7 @@ const assert = chai.assert;
 const Fs = require('fs');
 const Path = require('path');
 const Board = require('../models/board');
-const Const = require('../lib/const')
+const Const = require('../vendors/lib/const')
 
 describe('models.board', () => {
 
@@ -57,12 +57,59 @@ describe('models.board', () => {
   it('save', async() => {
     let board = await Board.open(session, TEST_NAME);
     board.columns = [{id: 1}]
-    await Board.save(session, board);
+    await Board.save(session, board.id, board);
     // check we wrote it to disk
     board = await Board.open(session, TEST_NAME);
     assert.isDefined(board.columns, 'has something');
     assert.equal(board.columns[0].id, 1)
   });
+
+  it('update', async () => {
+    let board = await Board.open(session, TEST_NAME);
+    let id = board.id;
+    board = {
+      description: 'new description'
+    }
+    await Board.update(session, id, board);
+    // check we wrote it to disk
+    board = await Board.open(session, TEST_NAME);
+    assert.isDefined(board.description, 'did create the field');
+    assert.equal(board.description, 'new description')
+  })
+
+  it('update - wrong fieldname', async () => {
+    let board = await Board.open(session, TEST_NAME);
+    let id = board.id;
+    board = {
+      'DOES_NOT_EXIST': 'new description'
+    }
+    try {
+      await Board.update(session, id, board);
+      assert.fail('should not update board')
+    } catch (e) {
+      assert.equal(e.message, 'data is not valid');
+      assert.isDefined(e.validationError);
+      assert.equal(e.validationError.message, '"DOES_NOT_EXIST" is not allowed')
+    }
+  });
+
+  it('update - multiple errors', async () => {
+    let board = await Board.open(session, TEST_NAME);
+    let id = board.id;
+    board = {
+      'DOES_NOT_EXIST': 'new description',
+      'THIS_TOO': 'no reason'
+    }
+    try {
+      await Board.update(session, id, board);
+      assert.fail('should not update board')
+    } catch (e) {
+      assert.equal(e.message, 'data is not valid');
+      assert.isDefined(e.validationError);
+      assert.equal(e.validationError.message, '"DOES_NOT_EXIST" is not allowed')
+    }
+  });
+
 
   it('make public', async () => {
     let board = await Board.open(session, TEST_NAME);

@@ -14,7 +14,8 @@
         "colorize": true,
         "format": "timestamp"
       }
-    ]
+    ],
+    "refreshId": 1289
   },
   {
     "id": 2,
@@ -35,13 +36,15 @@
         "colorize": true,
         "format": "timestamp"
       }
-    ]
+    ],
+    "refreshId": 1218
   },
   {
     "name": "test-user",
     "email": "info@dropper.info",
     "password": "12345",
-    "id": "05e7fa7f-2dd2-4823-8188-fbbcefefa804"
+    "id": "05e7fa7f-2dd2-4823-8188-fbbcefefa804",
+    "refreshId": 769
   },
   {
     "name": "test-user",

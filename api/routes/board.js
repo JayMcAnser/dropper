@@ -11,7 +11,7 @@ const boardController = require('../controllers/board');
 
 router.get('/:name', boardController.open);
 router.post('/', boardController.create);
-router.put('', boardController.replace);
-
+router.put('/:id', boardController.replace);
+router.patch('/:id', boardController.update)
 
 module.exports = router;

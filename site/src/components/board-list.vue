@@ -16,6 +16,7 @@
             x-small
             dark
             float-right
+            @click="editBoard(board.id)"
         >
           <v-icon>mdi-pencil</v-icon>
         </v-btn>
@@ -27,7 +28,7 @@
 </template>
 
 <script>
-// import { debug} from '../lib/logging';
+ import { debug} from '../vendors/lib/logging';
 /**
  * list the board available
  */
@@ -49,6 +50,10 @@ export default {
       let url = `board/${id}`;
       // debug(`open board ${id}`)
       this.$router.push( {name: 'board', params: {id}} )
+    },
+    editBoard(id) {
+      debug(`edit board ${id}`)
+      this.$router.push( {name: 'boardEdit', params: {id}})  
     },
     async refresh() {
       try {

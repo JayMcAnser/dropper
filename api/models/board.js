@@ -14,14 +14,36 @@ const { v4 : uuidv4} = require('uuid');
 const JsonFile = require('jsonfile');
 const Const = require('../vendors/lib/const')
 const Logging = require('../vendors/lib/logging');
+const Joi = require('joi');
+const {ValidationError} = require('../vendors/lib/model-helper')
 
 const historyActions = {
   imageAdd: 'image.add',
-  imageDelete: 'image.dlete',
-  imageUpdate: 'image.update'
+  imageDelete: 'image.dwlete',
+  imageUpdate: 'image.update',
+  dataUpate: 'data.update'
 }
 
+const InsertSchema = Joi.object({
+  title: Joi.string().min(3).max(100).required(),
+  name: Joi.string().max(50).required(),
+  description: Joi.string().allow(null, '')
+});
+
+const UpdateSchema = Joi.object({
+  id: Joi.string().allow(null, ''),     // is allowed but we do NOT write it
+  title: Joi.string().min(3).max(100).allow(null, ''),
+  name: Joi.string().max(50).allow(null, ''),
+  description: Joi.string().allow(null, '')
+})
+
+const READ = 1;
+const WRITE = 2;
+const READWRITE = 3;
+const DELETE = 4;
+
 module.exports = {
+  ROOT_USER: 'f4500bab-6ce1-445c-89da-6a884e723915',
   get rootDir() {
     return Helper.getFullPath('', {rootKey:'Path.dataRoot'})
   },
@@ -30,8 +52,16 @@ module.exports = {
     if (!session.userId) {
       throw new Error(`[board] ${Const.results.missingSession}`);
     }
+    return true;
   },
 
+  _validateRights: function(session, board, rights) {
+    if (session.userId === this.ROOT_USER || session.userId === board.ownerId) {
+      return true; // owner has ALL rights
+    }
+    // TODO: check the assigned rights
+    throw new Error(`[board] ${Const.results.noRights}`);
+  },
   _loadBoards: function(session, all= true) {
     let dirName = Helper.getFullPath('', {  rootKey: 'Path.dataRoot'})
     let boardIds = Fs.readdirSync(dirName);
@@ -45,6 +75,7 @@ module.exports = {
         let board = JsonFile.readFileSync(Path.join(dirName, boardIds[index], Config.get('Board.indexFilename')));
         if (board.ownerId === session.userId ||
           board.isPublic ||
+          session.userId === this.ROOT_USER ||
           board.users.findIndex( (u) => u.userId === session.userId) >= 0) {
           boards.push({
             id: boardIds[index],
@@ -73,12 +104,25 @@ module.exports = {
     }
     board.history.push(hist)
   },
+
+  /**
+   * validate the data for Editing
+   *
+   * @param data
+   * @returns {Joi.ValidationError|boolean} false if all is well
+   */
+  validate: function(schema, data, ) {
+    const {error, value} = schema.validate(data)
+    if (error) {
+      throw new ValidationError({ message: Const.results.dataNotValid, errors: error});
+    }
+    return true
+  },
+
   create: async function(session, board) {
     this._validateSession(session);
+    this.validate(InsertSchema, board);
 
-    if (board.name === undefined) {1
-      throw new Error(`[board] ${Const.results.boardNameRequired}`);
-    }
     // check the name in unique
     let b = await this.findOne(session, { name: board.name})
     if (b) {
@@ -125,7 +169,10 @@ module.exports = {
     this._validateSession(session);
     let filename = Helper.getFullPath(Config.get('Board.indexFilename'), { rootKey: 'Path.dataRoot', subDirectory: id, alwaysReturnPath: true})
     if (Fs.existsSync(filename)) {
-      return JsonFile.readFileSync(filename)
+      let board = JsonFile.readFileSync(filename)
+      if (this._validateRights(session, board, READ)) {
+        return board
+      }
     }
     throw new Error(Const.results.boardNotFound);
   },
@@ -189,6 +236,7 @@ module.exports = {
    * @private
    */
   async _write(session, board) {
+    this._validateRights(session, board, WRITE)
     let filename = Helper.getFullPath(Config.get('Board.indexFilename'), {
       rootKey: 'Path.dataRoot',
       subDirectory: board.id
@@ -228,18 +276,35 @@ module.exports = {
   /**
    * saving a board is only saving the group information
    * @param session
+   * @param id
    * @param board Object
    * @returns {Promise<void>}
    */
-  async save(session, board, fields = ['columns']) {
+  async save(session, id, board, fields = ['columns']) {
     this._validateSession(session);
-    let boardDef = await this._read(session, board.id)
+    let boardDef = await this._read(session, id)
     for (let index = 0; index < fields.length; index++) {
       boardDef[fields[index]] = board[fields[index]];
     }
     return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
   },
 
+  _fieldIsWritable(fieldname) {
+    return ['id'].indexOf(fieldname) < 0
+  },
+  async update(session, id, board, fields = ['description']) {
+    this._validateSession(session);
+    this.validate(UpdateSchema, board);
+    let boardDef = await this._read(session, id)
+    for (let fieldname in board) {
+      if (this._fieldIsWritable(fieldname)) {
+        boardDef[fieldname] = board[fieldname]
+      }
+    }
+    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' }).then( () => {
+      return this._returnData(boardDef, fields)
+    })
+  },
   /**
    * set the view right for a board
    * @param session
@@ -254,14 +319,25 @@ module.exports = {
     return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
   },
 
+  /**
+   *
+   * @param session
+   * @param boardName
+   * @returns {Promise<boolean>} True did succeed. false could not find recod
+   */
+
   async delete(session, boardName) {
     this._validateSession(session);
     let board = await this.findOne(session, {name: boardName});
     if (board) {
+      this._validateRights(session, board, DELETE)
       const Rimraf = require('rimraf');
       Rimraf.sync(Helper.getFullPath(board.id,{rootKey: 'Path.dataRoot'}));
+      return true;
+    } else {
+      return false;
     }
-    return true;
+
   },
 
   _getImageRec(image) {
