@@ -106,7 +106,8 @@ export default {
   methods: {
     async logout() {
       await this.$store.dispatch('auth/logout');
-      this.rightDrawer = false;
+      this.rightDrawer = false;      
+      this.$router.go()
     },
     menuURL(url) {
       debug(`open ${url}`, 'pages.index');      this.$router.push(url)

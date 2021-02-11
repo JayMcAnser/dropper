@@ -18,7 +18,8 @@ export default {
     LoginForm
   },
   methods: {
-    sucess : function() {      
+    sucess : function() {  
+      console.log('did login')    
       this.$router.push('/boards')
     }
   }

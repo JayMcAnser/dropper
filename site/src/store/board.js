@@ -55,6 +55,12 @@ export const mutations = {
         state.activeBoardIndex = index
       }
     }  
+  },
+  clearCache(state) {
+    state.boards = [];
+    state.activeBoardIndex = -1;
+    state.activeColumnIndex = 0;
+    debug(`clearCache done ${state.boards.length} boards`)
   }
 }
 
@@ -68,26 +74,7 @@ export const actions = {
   increment(context) {
     context.commit('increment')
   },
-  // async activate(context, index) {
-  //   context.commit('activeColumnIndex', index)
-  // },
-  /**
-   * dummy to check if the api is up and running
-   */
-  // async getActive() {
-  //   try {
-  //     let res = await this.$axios.get('/');
-  //     if (axiosActions.isOk(res)) {
-  //       return axiosActions.data(res);
-  //     } else {
-  //       error(axiosActions.errors(res), 'board.getActive');
-  //       throw new Error(axiosActions.errorMessage(res));
-  //     }
-  //   }  catch(e) {
-  //     error(e.message, 'board.getActive')
-  //   }
-  // },
-
+  
   /**
    * list all information from one board
    */
@@ -98,15 +85,16 @@ export const actions = {
       // do not reload the board list if not needed
       // if we do, the column(s) getters can return empty values
       // because the columns are not yet loaded.
-      debug(`serving from cache`, FUN)
+      debug(`serving from cache ${getters.boards.length} items`, FUN)
       return getters.boards
     }
     try {
-      debug(`loading from cache`, FUN)
-      let res = await Axios.get('/public/list');
+      debug(`loading from server`, FUN)      
+      let res = await Axios.get('/board/list');
       if (axiosActions.isOk(res)) {
         commit('setBoards', axiosActions.data(res));
         commit('activeColumnIndex', 0)
+        dispatch('auth/registerEvent', {name: 'boardList', action: ['logout', 'login'], call: 'board/reset'}, {root: true})
         return getters.boards;
       }      
       let err = newError(axiosActions.errors(res), FUN)      
@@ -127,12 +115,14 @@ export const actions = {
     const FUN = 'store.board.activate'
     await dispatch('status/clear', '', {root: true})
     try {      
-      let url = `/public/openById/${data.id}`
-      await dispatch('status/apiStatus', apiState.waiting)
+//      debug(`activate board ${data.id}`)
+      let url = `/board/${data.id}`
+      await dispatch('status/apiStatus', apiState.waiting, {root: true})
       let res = await Axios.get(url);   
-      if (axiosActions.isOk(res)) {       
-        await dispatch('status/apiStatus', apiState.ready)
-        commit('setBoard', axiosActions.data(res));
+      if (axiosActions.isOk(res)) {             
+        await dispatch('status/apiStatus', apiState.ready, {root: true})
+//        debug(`found it ${JSON.stringify(res)}`)  
+        commit('setBoard', axiosActions.data(res));        
         commit('activateBoard', axiosActions.data(res))  
         return getters.active;
       } else if (axiosActions.hasErrors(res)) {
@@ -153,9 +143,10 @@ export const actions = {
     await dispatch('status/clear', '', {root: true});
     try {
 
-      let url = `/public/openById/${data.id}`
+      let url = `/board/${data.id}`
       let res = await Axios.get(url);   
       if (axiosActions.isOk(res)) {       
+        await dispatch('status/apiStatus', apiState.ready, {root: true})
         commit('setBoard', axiosActions.data(res));
         return axiosActions.data(res)
       } else if (axiosActions.hasErrors(res)) {
@@ -177,23 +168,29 @@ export const actions = {
     await dispatch('status/clear', '', {root: true});
     let result;
     try {
-      Headers(rootGetters['auth/token'])
+      // Headers(rootGetters['auth/token'])
       if (isNew(data)) {
         result = await Axios.post('/board', data);
       } else {
         result = await Axios.patch(`board/${data.id}`, data)
       }
       if (axiosActions.isOk(result)) {   
+        await dispatch('status/apiStatus', apiState.ready, {root: true})
         return  axiosActions.data(result)
       } else {
         let err = newError(axiosActions.errors(result), FUN)      
-        dispatch('status/error', err, {root: true})                
+        dispatch('status/error', err, {root: true}, {root: true})                
         return false;
       }
     } catch(e) {
       dispatch('status/error', newError(e, FUN), {root: true}) 
       throw e;
     }
+  },
+
+  async reset({commit}) {
+    debug('reset', 'store.board.reset')
+    await commit('clearCache')
   }
 }
 

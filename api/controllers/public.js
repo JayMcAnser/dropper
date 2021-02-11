@@ -33,14 +33,14 @@ module.exports = {
     try {
       if (req.params && req.params.name) {
         let board = await boardModel.open( session, req.params.name);
-        if (board && board.isPublic) {
-          // session.log('info', `[controller.public].open open ${req.params.name}`)
+        // if (board && board.isPublic) {
+        //   // session.log('info', `[controller.public].open open ${req.params.name}`)
           ApiReturn.result(req,res, board, {type: 'info', message: `[controller.public].open open ${req.params.name}`})
-        } else {
-          ApiReturn.error(req, res, {message: Const.results.accessDenied}, 403 );
-        }
-      } else {
-        ApiReturn.result(req, res, {message: 'Dropper Curator API is active'}, 'api ping')
+      //   } else {
+      //     ApiReturn.error(req, res, {message: Const.results.accessDenied}, 403 );
+      //   }
+      // } else {
+//        ApiReturn.result(req, res, {message: 'Dropper Curator API is active'}, 'api ping')
       }
     } catch (e) {
       if (e.message === Const.results.boardNotFound) {
@@ -56,12 +56,12 @@ module.exports = {
     try {
       if (req.params && req.params.id) {
         let board = await boardModel.openById( session, req.params.id);
-        if (board && board.isPublic) {
+//        if (board && board.isPublic) {
           session.log('info', `[controller.public].open open ${req.params.id}`)
           ApiReturn.result(req, res, board, {type: 'info', message: `[controller.public].open open ${req.params.id}`})
-        } else {
-          ApiReturn.error(req, res, {message: Const.results.accessDenied}, 403 );
-        }
+        // } else {
+        //   ApiReturn.error(req, res, {message: Const.results.accessDenied}, 403 );
+        // }
       } else {
         ApiReturn.result(req, res, {message: 'Dropper Curator API is active'}, 'api ping')
       }

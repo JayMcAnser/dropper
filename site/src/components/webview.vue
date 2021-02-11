@@ -6,13 +6,16 @@
         max-width="500"
       >
         <v-toolbar>
-          <v-app-bar-nav-icon></v-app-bar-nav-icon>
+<!--          <v-app-bar-nav-icon></v-app-bar-nav-icon> -->
           <v-toolbar-title>Formats</v-toolbar-title>
           <v-spacer></v-spacer>
-          <v-btn icon>
+<!--          <v-btn icon>
             <v-icon>mdi-magnify</v-icon>
           </v-btn>
-          <v-btn icon>
+-->          
+          <v-btn icon
+            @click="fullScreen()"
+          >
             <v-icon>mdi-checkbox-marked-circle</v-icon>
           </v-btn>
         </v-toolbar>
@@ -81,6 +84,11 @@ export default {
       return { width: this.phones[this.activeStyleIndex].width, height: this.phones[this.activeStyleIndex].height};
     }
   },
+  methods: {
+    fullScreen() {
+      this.$router.push('/boards')
+    }
+  }
 }
 </script>
 

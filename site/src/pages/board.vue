@@ -9,6 +9,7 @@
     ></column-view>
     <error-dialog
       @retry="onRetry"
+      @cancel="onCancel"
     ></error-dialog>
   </div>
 </template>
@@ -55,8 +56,13 @@ export default {
   },
   methods: {
     async onRetry() {
+      debug(`retry error`)
       await this.reload()
     },  
+    async onCancel() {
+      debug(`cancel error`)
+      this.$router.go(-1)
+    },
     async reload() {
       // debug(`activate board`)
       await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 

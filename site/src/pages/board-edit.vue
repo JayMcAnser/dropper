@@ -88,7 +88,7 @@ export default {
         };
         try {
           let id = await this.$store.dispatch('board/save', board);  
-          this.$router.push({name: board, params: {id}})
+          this.$router.push({name: 'board', params: {id}})
         } catch(e) {
           error(`[board-edit] ${e.message}`)
         }

@@ -15,7 +15,7 @@ const JsonFile = require('jsonfile');
 const Const = require('../vendors/lib/const')
 const Logging = require('../vendors/lib/logging');
 const Joi = require('joi');
-const {ValidationError} = require('../vendors/lib/model-helper')
+const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
 
 const historyActions = {
   imageAdd: 'image.add',
@@ -27,14 +27,16 @@ const historyActions = {
 const InsertSchema = Joi.object({
   title: Joi.string().min(3).max(100).required(),
   name: Joi.string().max(50).required(),
-  description: Joi.string().allow(null, '')
+  description: Joi.string().allow(null, ''),
+  isPublic: Joi.bool().default(false)
 });
 
 const UpdateSchema = Joi.object({
   id: Joi.string().allow(null, ''),     // is allowed but we do NOT write it
   title: Joi.string().min(3).max(100).allow(null, ''),
   name: Joi.string().max(50).allow(null, ''),
-  description: Joi.string().allow(null, '')
+  description: Joi.string().allow(null, ''),
+  isPublic: Joi.bool().default(false)
 })
 
 const READ = 1;
@@ -59,8 +61,11 @@ module.exports = {
     if (session.userId === this.ROOT_USER || session.userId === board.ownerId) {
       return true; // owner has ALL rights
     }
+    if (board.isPublic) {
+      return true;
+    }
     // TODO: check the assigned rights
-    throw new Error(`[board] ${Const.results.noRights}`);
+    throw new StatusError({ message: Const.results.noRights, status: 403});
   },
   _loadBoards: function(session, all= true) {
     let dirName = Helper.getFullPath('', {  rootKey: 'Path.dataRoot'})
@@ -134,7 +139,7 @@ module.exports = {
       name: board.name,
       title: board.title ? board.title: board.name,
       ownerId: session.userId,
-      isPublic: false,
+      isPublic: !!board.isPublic,
       users: [],
       description: '',
       history: [{userId: session.userId, date: Date.now(), type: 'created'}],
@@ -146,6 +151,7 @@ module.exports = {
       subDirectory: boardStore.id,
       makePath: true, returnPaths: true})
     let result = await JsonFile.writeFile(filename, boardStore);
+    session.log('debug', `generate board ${boardStore.id} at ${filename}`);
     //ToDo: we should register our board to in the database
     Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'))
     return boardStore.id
@@ -225,7 +231,7 @@ module.exports = {
         return JsonFile.readFile(filename);
       }
     }
-    throw new Error(Const.results.boardNotFound);
+    throw new StatusError({message: Const.results.boardNotFound, status: 404});
   },
   /**
    * lowlevel writing a board

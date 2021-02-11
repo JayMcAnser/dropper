@@ -7,13 +7,16 @@ const assert = chai.assert;
 const Init = require('./init-test');
 const Board = require('../models/board')
 const Const = require('../vendors/lib/const');
-const TEST_BOARD = 'test.ctrl'
 const server = 'http://localhost:3050/api';
 
 
 describe('controller.board', () => {
 
-  let TEST_BOARD_ID = 0;
+  const TEST_BOARD = 'test.ctrl'
+  const TEST_BOARD_PUBLIC = 'test.public.ctrl'
+
+    let TEST_BOARD_ID = 0;
+  let TEST_BOARD_PUBLIC_ID = 0;
 
   describe('with login', () => {
     let token;
@@ -22,6 +25,7 @@ describe('controller.board', () => {
       let session = {userId: await Init.AuthUserId};
       // must use ROOT_USER because we logged in as a new user
       await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD)
+      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD_PUBLIC)
     })
 
     it('create', () => {
@@ -29,18 +33,64 @@ describe('controller.board', () => {
         .post('/board')
         .set('authorization', token)
         // .type('form')
-        .send({name: TEST_BOARD, title:'Test Board'})
+        .send({name: TEST_BOARD, title: 'Test Board'})
         .then((result) => {
+          // the private board
           assert.equal(result.status, 200);
           assert.isUndefined(result.body.errors)
           // assert.equal(result.body.status, Const.status.success, result.body.message);
-          TEST_BOARD_ID = result.body.data
-        })
+          TEST_BOARD_ID = result.body.data;
+
+          // -- the public board
+          return chai.request(server)
+            .post('/board')
+            .set('authorization', token)
+            // .type('form')
+            .send({name: TEST_BOARD_PUBLIC, title: 'Test Board', isPublic: true})
+            .then((result) => {
+              assert.equal(result.status, 200);
+              assert.isUndefined(result.body.errors)
+              TEST_BOARD_PUBLIC_ID = result.body.data
+            })
+        });
     })
 
-    it('open', () => {
+    it('public access', () => {
+      return chai.request(server)
+        .get(`/board/${TEST_BOARD_PUBLIC}`)
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isUndefined(result.body.errors)
+        });
+    })
+
+    it('public list', () => {
+      return chai.request(server)
+        .get(`/board/list`)
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isUndefined(result.body.errors)
+          assert.isTrue(result.body.data.length > 0);
+          assert.isTrue(result.body.data.findIndex( x => x.id === TEST_BOARD_PUBLIC_ID) >= 0)
+          assert.isTrue(result.body.data.findIndex( x => !x.isPublic) < 0, 'all are public')
+        });
+    })
+    it('open - by name', () => {
       return chai.request(server)
         .get(`/board/${TEST_BOARD}`)
+        .set('authorization', token)
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isDefined(result.body.data);
+          assert.isUndefined(result.body.errors,)
+          assert.equal(result.body.data.title, 'Test Board')
+          assert.isDefined(result.body.data.id);
+        })
+    });
+
+    it('open - by id', () => {
+      return chai.request(server)
+        .get(`/board/${TEST_BOARD_ID}`)
         .set('authorization', token)
         .then((result) => {
           assert.equal(result.status, 200)
@@ -56,7 +106,7 @@ describe('controller.board', () => {
         .get(`/board/${TEST_BOARD + '.not-found'}`)
         .set('authorization', token)
         .then((result) => {
-          assert.equal(result.status, 200)
+          assert.equal(result.status, 404)
           assert.isDefined(result.body.errors)
           assert.equal(result.body.errors.length, 1)
           assert.equal(result.body.errors[0].title, 'board not found')
@@ -103,7 +153,7 @@ describe('controller.board', () => {
       return chai.request(server)
         .get(`/board/${TEST_BOARD}`)
         .then((result) => {
-          assert.equal(result.status, 403)
+          assert.equal(result.status, 404)
           assert.isDefined(result.body.errors);
         })
     });
