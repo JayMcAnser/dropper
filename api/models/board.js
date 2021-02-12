@@ -153,8 +153,9 @@ module.exports = {
     let result = await JsonFile.writeFile(filename, boardStore);
     session.log('debug', `generate board ${boardStore.id} at ${filename}`);
     //ToDo: we should register our board to in the database
-    Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'))
-    return boardStore.id
+    Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'));
+    return this._returnData(boardStore, ['description', 'columns'])
+    // use to be only the number return boardStore.id
   },
 
   async findOne(session, what) {

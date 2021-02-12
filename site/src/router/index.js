@@ -36,7 +36,7 @@ const routes = [
     component: () => import(/* webpackChunkName: "board" */ '../pages/board-edit.vue')
   },
   {
-    path: '/board/:id',
+    path: '/board/:id?',  // if no id, the active is used
     name: 'board',
     component: () => import(/* webpackChunkName: "board" */ '../pages/board.vue')
   },

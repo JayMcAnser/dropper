@@ -41,11 +41,7 @@
       options: function() {
         debug('opening right drawer')
         this.$store.dispatch('status/rightDrawer', true);  
-      },
-      doCancel() {
-        debug('wrong doCancel')
       }
-
     }
   }
 </script>

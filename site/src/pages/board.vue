@@ -65,7 +65,11 @@ export default {
     },
     async reload() {
       // debug(`activate board`)
-      await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 
+      if (this.$route.params.id) {      
+        await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 
+      } else {
+        debug('open active board', 'page.board')
+      }
     }
 
   },

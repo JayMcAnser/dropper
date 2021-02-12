@@ -69,7 +69,7 @@ export default {
     this.id = this.$route.params.id;
     this.isAdd = ! this.id
     if (!this.isAdd) {
-      debug(`edit board ${this.id}`)
+      debug(`edit board 2 ${this.id}`)
       let board = await this.$store.dispatch('board/open', {id: this.id})
       this.title = board.title;
       this.description = board.description;
@@ -87,8 +87,8 @@ export default {
           description: this.description
         };
         try {
-          let id = await this.$store.dispatch('board/save', board);  
-          this.$router.push({name: 'board', params: {id}})
+          await this.$store.dispatch('board/save', board);  
+          this.$router.push({name: 'board'})
         } catch(e) {
           error(`[board-edit] ${e.message}`)
         }

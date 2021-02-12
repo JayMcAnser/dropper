@@ -15,6 +15,21 @@ export const state = () => ({
   counter: 0
 })
 
+const _copyField = function(source, dest, hiddenFields = false) {
+  if (!hiddenFields) {
+    hiddenFields = ['id', '_isNew']
+  } else if (Array.isArray(hiddenFields)) {
+    hiddenFields = [hiddenFields]
+  }
+  
+  for (let fieldname in source) {
+    if (hiddenFields.indexOf(fieldname) < 0) {
+      dest[fieldname] = source[fieldname]
+    }
+  }
+  return dest;  
+}
+
 export const mutations = {
   increment(state) {
     state.counter++
@@ -42,10 +57,20 @@ export const mutations = {
       error(`board ${board.id} not found`)
       state.activeBoardIndex = -1
       return false;
-    } 
-    state.boards[index] = board;    
+    }
+    _copyField(board, state.boards[index]); 
+    // state.boards[index] = board;    
     return index
   },
+  addBoard(state, board) {
+    let index = state.boards.findIndex( (b) => b.id === board.id);
+    if (index < 0) {
+      state.boards.push(board);
+      return state.boards.length - 1
+    }
+    return index
+  },
+
   activateBoard(state, board) {
     let index = state.boards.findIndex( (b) => b.id === board.id);
     if (index !== false) {
@@ -115,8 +140,8 @@ export const actions = {
     const FUN = 'store.board.activate'
     await dispatch('status/clear', '', {root: true})
     try {      
-//      debug(`activate board ${data.id}`)
       let url = `/board/${data.id}`
+      debug(`activate board ${url}`)
       await dispatch('status/apiStatus', apiState.waiting, {root: true})
       let res = await Axios.get(url);   
       if (axiosActions.isOk(res)) {             
@@ -155,7 +180,7 @@ export const actions = {
         return false;
       } else {
         warn(axiosActions.data(res), FUN)
-        return axiosActions.data(res)
+        return axiosActions.data(res); //?????
       }
     } catch(e) {
       dispatch('status/error', newError(e, FUN), {root: true}) 
@@ -170,18 +195,29 @@ export const actions = {
     try {
       // Headers(rootGetters['auth/token'])
       if (isNew(data)) {
-        result = await Axios.post('/board', data);
+        result = await Axios.post('board', data);        
+        if (axiosActions.isOk(result)) {   
+          let board = axiosActions.data(result);
+          debug(`create board id: ${board.id}`)
+          // await dispatch('board/open', {dataid},  {root: true})
+          commit('addBoard', board)
+          commit('activateBoard', board);
+          await dispatch('status/apiStatus', apiState.ready, {root: true})
+          return true
+        }
       } else {
         result = await Axios.patch(`board/${data.id}`, data)
+        if (axiosActions.isOk(result)) {   
+          let board = axiosActions.data(result)
+          commit('setBoard', board);
+          commit('activateBoard', board);  
+          await dispatch('status/apiStatus', apiState.ready, {root: true})
+          return true
+        }
       }
-      if (axiosActions.isOk(result)) {   
-        await dispatch('status/apiStatus', apiState.ready, {root: true})
-        return  axiosActions.data(result)
-      } else {
-        let err = newError(axiosActions.errors(result), FUN)      
-        dispatch('status/error', err, {root: true}, {root: true})                
-        return false;
-      }
+      let err = newError(axiosActions.errors(result), FUN)      
+      dispatch('status/error', err, {root: true})                
+      return false;
     } catch(e) {
       dispatch('status/error', newError(e, FUN), {root: true}) 
       throw e;

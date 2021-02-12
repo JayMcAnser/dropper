@@ -5,7 +5,17 @@
   >
     <spark-line
       :columns="columns"
-    ></spark-line>    
+    ></spark-line> 
+    <div
+      v-if="isAuthenticated"
+    >
+     <v-btn       
+        icon
+        @click="options()"
+      >
+        <v-icon>mdi-dots-vertical</v-icon>
+      </v-btn>
+    </div>   
   </v-app-bar>
 </template>
 
@@ -20,6 +30,11 @@
         required: true
       }
     },
+     computed: {
+      isAuthenticated() {
+        return this.$store.getters['auth/isLoggedIn']
+      }
+    },   
     components: {
       SparkLine
     }  
