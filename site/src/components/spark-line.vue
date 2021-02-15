@@ -1,8 +1,10 @@
 <template>
+<!--
   <v-app-bar
       fixed
       app
-  >  
+  > --> 
+  
     <div id="spark-container"
          ref="spark"
          @click="sparkClick"
@@ -22,7 +24,8 @@
       <!-- <a @click="generateSparks()">generate {{ buttonState }}</a> -->
 
     </div>
-  </v-app-bar>
+<!--  </v-app-bar> -->
+  
 </template>
 
 <script>

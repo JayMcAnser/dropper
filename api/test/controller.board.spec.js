@@ -14,12 +14,14 @@ describe('controller.board', () => {
 
   const TEST_BOARD = 'test.ctrl'
   const TEST_BOARD_PUBLIC = 'test.public.ctrl'
+  const TEST_BOARD_NO_LOGIN = 'test.ctrl.login';
 
-    let TEST_BOARD_ID = 0;
+  let TEST_BOARD_ID = 0;
   let TEST_BOARD_PUBLIC_ID = 0;
+  let token;
 
   describe('with login', () => {
-    let token;
+
     before( async() => {
       token = await Init.AuthToken;
       let session = {userId: await Init.AuthUserId};
@@ -39,7 +41,7 @@ describe('controller.board', () => {
           assert.equal(result.status, 200);
           assert.isUndefined(result.body.errors)
           // assert.equal(result.body.status, Const.status.success, result.body.message);
-          TEST_BOARD_ID = result.body.data;
+          TEST_BOARD_ID = result.body.data.id;
 
           // -- the public board
           return chai.request(server)
@@ -50,7 +52,7 @@ describe('controller.board', () => {
             .then((result) => {
               assert.equal(result.status, 200);
               assert.isUndefined(result.body.errors)
-              TEST_BOARD_PUBLIC_ID = result.body.data
+              TEST_BOARD_PUBLIC_ID = result.body.data.id
             })
         });
     })
@@ -128,20 +130,21 @@ describe('controller.board', () => {
 
         })
     });
+    // DO NOT DELETE THE BOARD. ITS USED BY elements
   })
 
 
   describe('without login', () => {
     before( async() => {
       let session = {userId: await Init.AuthUserId};
-      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD)
+      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD_NO_LOGIN)
     })
 
     it('create', () => {
       return chai.request(server)
         .post('/board')
 //        .type('form')
-        .send({name: TEST_BOARD, title:'Test Board'})
+        .send({name: TEST_BOARD, title:TEST_BOARD_NO_LOGIN})
         .then((result) => {
           assert.equal(result.status, 403)
           assert.equal(result.body.errors.length, 1);
@@ -151,11 +154,70 @@ describe('controller.board', () => {
 
     it('open', () => {
       return chai.request(server)
-        .get(`/board/${TEST_BOARD}`)
+        .get(`/board/${TEST_BOARD_NO_LOGIN}`)
         .then((result) => {
           assert.equal(result.status, 404)
           assert.isDefined(result.body.errors);
         })
     });
+  });
+
+  describe('elements', () => {
+    let elementId;
+
+    it('add', () => {
+      return chai.request(server)
+        .post(`/board/${TEST_BOARD_ID}/element`)
+        .set('authorization', token)
+        .send({
+          type: 'text',
+          key: 'element.1'
+        })
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isDefined(result.body.data);
+          assert.equal(result.body.data.type, 'text')
+        })
+    });
+    it('check', () => {
+      return chai.request(server)
+        .get(`/board/${TEST_BOARD_ID}`)
+        .set('authorization', token)
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isDefined(result.body.data.elements);
+          assert.equal(Object.keys(result.body.data.elements).length, 1)
+          elementId = Object.keys(result.body.data.elements)[0]
+        })
+    });
+
+    it('update', () => {
+      return chai.request(server)
+        .patch(`/board/${TEST_BOARD_ID}/element`)
+        .set('authorization', token)
+        .send({
+          id: elementId,
+          type: 'image'
+        })
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isDefined(result.body.data);
+          let data = result.body.data;
+          assert.equal(data.type, 'image')
+        });
+    })
+
+    it('delete', () => {
+      return chai.request(server)
+        .delete(`/board/${TEST_BOARD_ID}/element/${elementId}`)
+        .set('authorization', token)
+        .then((result) => {
+          assert.equal(result.status, 200)
+          assert.isUndefined(result.body.errors)
+          assert.isDefined(result.body.data);
+          let data = result.body.data;
+          assert.equal(Object.keys(data.elements).length, 0)
+        });
+    })
   })
 })

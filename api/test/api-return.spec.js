@@ -1,7 +1,7 @@
 const Init = require('./init-test');
 const chai = require('chai');
 const assert = chai.assert;
-const ApiReturn = require('../lib/api-return')
+const ApiReturn = require('../vendors/lib/api-return')
 
 let res = {
   _json: false,
@@ -34,7 +34,7 @@ const clean = (obj) => {
     if (typeof obj[key] === 'object') {
       obj[key] = clean(obj[key])
     } else if (typeof obj[key] === 'array') {
-      obj[key] = []  
+      obj[key] = []
     } else if (key[0] === '_') {
       obj[key] = false;
     }
@@ -48,9 +48,9 @@ describe('api-return', () => {
   it('result', () => {
     let result = ApiReturn.result(clean(req), clean(res), {test: 'some'});
     assert.equal(res._status, 200)
-    assert.equal(req.session._type, false, 'no info logger')    
-    result = ApiReturn.result(clean(req), clean(res), {test: 'some'}, 'log message');    
-    assert.equal(req.session._type, 'info')    
+    assert.equal(req.session._type, false, 'no info logger')
+    result = ApiReturn.result(clean(req), clean(res), {test: 'some'}, 'log message');
+    assert.equal(req.session._type, 'info')
     assert.equal(req.session._message, 'log message')
     result = ApiReturn.result(clean(req), clean(res), {rec: 'the result'}, 201);
     assert.equal(res._status, 201, 'status can be set')
@@ -70,14 +70,14 @@ describe('api-return', () => {
     ApiReturn.error(clean(req), clean(res), new Error('the message'));
     assert.equal(res._status, 500)
     assert.deepEqual(res._json, {errors: [{status: 500, title: 'the message'}]})
-    assert.equal(req.session._type, 'error', 'default is error')  
+    assert.equal(req.session._type, 'error', 'default is error')
     assert.equal(req.session._message, 'the message')
   });
   it('error result - location', () => {
     ApiReturn.error(clean(req), clean(res), new Error('the message'), '[test]');
     assert.equal(res._status, 500)
-    
-    assert.equal(req.session._type, 'error', 'default is error')  
+
+    assert.equal(req.session._type, 'error', 'default is error')
     assert.equal(req.session._message, '[test] the message')
   });
 

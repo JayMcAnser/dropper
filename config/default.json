@@ -3,6 +3,10 @@
     "port": 3050,
     "secretKey": "Dr0pper"
   },
+  "Auth": {
+    "tokenExpire" : "1h",
+    "refreshExpire": "10d"
+  },
   "Path": {
     "configRoot.doc": "the full path or relative to api directory where data is stored",
     "configRoot": "..",
@@ -16,10 +20,7 @@
     "siteRoot": "dist"
   },
   "Logging": [
-    { "type": "access", "format":  "dev" },
-    { "type": "access", "format":  "tiny", "filename": "access.curator.log"},
-    { "type": "console", "level": "info", "colorize": true, "format": "timestamp"},
-    { "type": "file", "level": "debug", "colorize": true, "format": "timestamp", "filename": "public.log" }
+    { "type": "access", "format":  "tiny", "filename": "access.curator.log"}
   ],
   "Board": {
     "indexFilename": "index.json"

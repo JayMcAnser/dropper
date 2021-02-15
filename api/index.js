@@ -4,6 +4,7 @@ const Config = require('config');
 const Logging = require('./vendors/lib/logging')
 const BoardController = require('./controllers/board')
 const StaticSite = require('./vendors/lib/static-site');
+const Helper = require('./vendors/lib/helper')
 
 
 App.use('/api/public',  require('./routes/public'));
@@ -15,7 +16,7 @@ let staticSite = new StaticSite(App);
 
 let listener = App.listen(Config.get('Server.port'),
   function() {
-    Logging.log('info', `dropper server (http://localhost:${Config.get('Server.port')}) is active`)
+    console.log(`Dropper server (http://localhost:${Config.get('Server.port')}) is active. (data: ${Helper.getFullPath('', {rootKey: 'Path.dataRoot'})})`)
   }
 );
 // /**

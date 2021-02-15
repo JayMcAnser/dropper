@@ -5,8 +5,8 @@ const Init = require('./init-test');
 const chai = require('chai');
 const assert = chai.assert;
 
-const User = require('../models/user');
-const Const = require('../lib/const');
+const User = require('../vendors/models/user');
+const Const = require('../vendors/lib/const');
 
 describe('models.user', () => {
 

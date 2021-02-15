@@ -1,7 +1,7 @@
 <template>
   <v-app id="app">    
     <router-view
-      :key="$route.fullPath"
+      :key="$route.fullPath"      
     >  
     </router-view>     
     <v-navigation-drawer
@@ -36,7 +36,7 @@
           <v-list-item
             v-for="newAction in newActions" 
             :key="newAction.id"
-            @click="menuURL(newAction.actionURL)"
+            @click="menuURL(newAction.id)"
           >
             <v-list-item-title>
               {{ newAction.title}}
@@ -70,9 +70,9 @@ import {debug} from '../vendors/lib/logging'
  * this page is loaded by ALL pages * 
  */
 const NEW_ITEMS = [
-  { key: 1, title: 'Board', icon: 'mdi-vector-combine' , actionURL: '/boardNew'},
-  { key: 2, title: 'Column', icon: 'mdi-table-column-plus-after'},
-  { key: 3, title: 'Element', icon: 'mdi-power-socket-jp'}
+  { id: 1, title: 'Board', icon: 'mdi-vector-combine' , actionURL: '/boardNew', actionState: 1},
+  { id: 2, title: 'Column', icon: 'mdi-table-column-plus-after', action: 'columnDialog'},
+  { id: 3, title: 'Element', icon: 'mdi-power-socket-jp', actionState: 0}
 ]
 
 export default {
@@ -92,12 +92,13 @@ export default {
       
     },
     rightDrawer: {
-      get: function() {
-        return this.$store.getters['status/rightDrawer'];
-      }, 
-      set: function(show) {
-        return this.$store.dispatch('status/rightDrawer', show)
+      get: function() {        
+        return  this.$store.getters['status/rightDrawer'];
+      },
+      set: function(val) {
+        this.$store.dispatch('status/rightDrawer', val)   
       }
+
     },
     user() {      
       return this.$store.getters['auth/user']
@@ -105,17 +106,35 @@ export default {
   },
   methods: {
     async logout() {
-      await this.$store.dispatch('auth/logout');
-      this.rightDrawer = false;      
+      await this.$store.dispatch('auth/logout');      
+      this.$store.dispatch('status/rightDrawer', false)
       this.$router.go()
     },
-    menuURL(url) {
-      debug(`open ${url}`, 'pages.index');      this.$router.push(url)
+    async menuURL(id) {
+      let active = NEW_ITEMS.find( (i) => i.id === id);
+      if (active) {        
+        if (active.actionURL) {
+          this.$router.push(active.actionURL);
+        } else if (active.action) {
+          await this.$store.dispatch('status/rightDrawer', false)
+          await this.$store.dispatch('status/dialog', {name: 'columnDialog', id:-1});
+        } else {
+          warn(`no action in ${JSON.stringify(active)}`, 'page.index');
+        }
+      } else {
+        debug(`action ${id} not found`, 'pages.index');
+      }
+      
     }  
   }, 
   async mounted() {
     debug('check restore')
     this.$store.dispatch('auth/restore');
+    // for (let index = 0; index < NEW_ITEMS.length; index++) {
+    //   if (NEW_ITEMS[index].action) {
+    //     await this.$store.dispatch('status/stateRegister', {key: NEW_ITEMS[index].action })
+    //   }
+    // }
   }
 }
 </script>

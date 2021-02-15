@@ -19,13 +19,16 @@ const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
 
 const historyActions = {
   imageAdd: 'image.add',
-  imageDelete: 'image.dwlete',
+  imageDelete: 'image.delete',
   imageUpdate: 'image.update',
-  dataUpate: 'data.update'
+  dataUpate: 'data.update',
+  elementAdd: 'element.add',
+  elementUpdate: 'element.update',
+  elementRemove: 'element.remove'
 }
 
 const InsertSchema = Joi.object({
-  title: Joi.string().min(3).max(100).required(),
+  title: Joi.string().min(3).max(100),
   name: Joi.string().max(50).required(),
   description: Joi.string().allow(null, ''),
   isPublic: Joi.bool().default(false)
@@ -38,6 +41,23 @@ const UpdateSchema = Joi.object({
   description: Joi.string().allow(null, ''),
   isPublic: Joi.bool().default(false)
 })
+
+const ElementInsertSchema = Joi.object({
+  key: Joi.string().max(50).required(),
+  type: Joi.string().required(),
+  title: Joi.string().min(3).max(100),
+
+  description: Joi.string().allow(null, ''),
+})
+
+const ElementUpdateSchema = Joi.object({
+  id: Joi.string(),
+  key: Joi.string().max(50),
+  type: Joi.string(),
+  title: Joi.string().min(3).max(100),
+  description: Joi.string().allow(null, ''),
+})
+
 
 const READ = 1;
 const WRITE = 2;
@@ -119,7 +139,7 @@ module.exports = {
   validate: function(schema, data, ) {
     const {error, value} = schema.validate(data)
     if (error) {
-      throw new ValidationError({ message: Const.results.dataNotValid, errors: error});
+      throw new ValidationError({ message: Const.results.dataNotValid, errors: error, status: 422});
     }
     return true
   },
@@ -143,7 +163,7 @@ module.exports = {
       users: [],
       description: '',
       history: [{userId: session.userId, date: Date.now(), type: 'created'}],
-      columns: board.columns ? board.columns: []
+      elements: board.elements ? board.elements: {}
     }
 
     let filename = Helper.getFullPath(Config.get('Board.indexFilename'),{
@@ -154,7 +174,7 @@ module.exports = {
     session.log('debug', `generate board ${boardStore.id} at ${filename}`);
     //ToDo: we should register our board to in the database
     Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'));
-    return this._returnData(boardStore, ['description', 'columns'])
+    return this._returnData(boardStore, ['description', 'elements'])
     // use to be only the number return boardStore.id
   },
 
@@ -269,13 +289,13 @@ module.exports = {
   },
 
 
-  async open(session, name, fields = ['description', 'columns']) {
+  async open(session, name, fields = ['description', 'elements']) {
     this._validateSession(session);
     let raw = await this._read(session, {name: name});
     return this._returnData(raw, fields)
   },
 
-  async openById(session, id, fields = ['description', 'columns']) {
+  async openById(session, id, fields = ['description', 'elements']) {
     this._validateSession(session);
     let raw = await this._read(session, id);
     return this._returnData(raw, fields)
@@ -287,7 +307,7 @@ module.exports = {
    * @param board Object
    * @returns {Promise<void>}
    */
-  async save(session, id, board, fields = ['columns']) {
+  async save(session, id, board, fields = ['elements']) {
     this._validateSession(session);
     let boardDef = await this._read(session, id)
     for (let index = 0; index < fields.length; index++) {
@@ -419,5 +439,56 @@ module.exports = {
   async imagePut(session, board, image) {
     throw new Error(Const.notImplemented)
   },
+
+
+  /**
+   *  add add a new image. Return
+   * @param {Session} session
+   * @param {Object} board
+   * @param {Object} element
+   * @return Object element with the unique id
+   */
+  async elementAdd(session, board, element) {
+    this._validateSession(session);
+    this.validate(ElementInsertSchema, element)
+
+    element.id = uuidv4();
+    if (!board.elements) {
+      board.elements = {}
+    }
+    board.elements[element.id] = element
+    this._historyAdd(session, board, historyActions.elementAdd, element)
+    return this.save(session, board.id, board, ['history', 'elements']).then( () => {
+      return element
+    });
+  },
+
+  async elementUpdate(session, board, element) {
+    this._validateSession(session);
+    this.validate(ElementUpdateSchema, element)
+    if (!element.id || !board.elements.hasOwnProperty(element.id)) {
+      throw new StatusError({message: 'element not found', status: 404})
+    }
+    for (let fieldname in element) {
+      board.elements[element.id][fieldname] = element[fieldname]
+    }
+    this._historyAdd(session, board, historyActions.elementUpdate, element)
+    return this.save(session, board.id, board, ['history', 'elements']).then( () => {
+      return element
+    });
+  },
+
+  async elementRemove(session, board, elementId) {
+    this._validateSession(session);
+    if (!board.elements.hasOwnProperty(elementId)) {
+      throw new StatusError({message: 'element not found', status: 404})
+    }
+    delete board.elements[elementId]
+    this._historyAdd(session, board, historyActions.elementRemove, elementId)
+    return this.save(session, board.id, board, ['history', 'elements']).then( () => {
+      return board
+    });
+
+  }
 
 }

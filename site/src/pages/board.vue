@@ -11,12 +11,15 @@
       @retry="onRetry"
       @cancel="onCancel"
     ></error-dialog>
+    <column-dialog>
+    </column-dialog>
   </div>
 </template>
 
 <script>
 
 import BoardBar from '../components/board-bar.vue'
+import ColumnDialog from '../components/column-dialog.vue'
 import ColumnView from '../components/column-view.vue'
 import ErrorDialog from '../vendors/components/error-dialog.vue'
 import {debug, error} from '../vendors/lib/logging'
@@ -26,7 +29,7 @@ export default {
   name: 'Board',
   data: function() {
     return {    
-          
+      columnDialog: false,
     }
   },
   params: {
@@ -35,7 +38,8 @@ export default {
   components: {
     BoardBar,
     ColumnView,    
-    ErrorDialog
+    ErrorDialog,
+    ColumnDialog
   },
   computed: {
     board() {
@@ -52,7 +56,8 @@ export default {
       let column = this.$store.getters['board/column'];
       // debug(`column: ${JSON.stringify(column)}`)
       return this.$store.getters['board/column']
-    }    
+    }  
+
   },
   methods: {
     async onRetry() {

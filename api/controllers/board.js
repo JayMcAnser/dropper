@@ -94,7 +94,45 @@ module.exports = {
       ApiReturn.error(req, res, e, LOC, 200);
       // res.json({status: Const.status.error, message: e.message, data:e.errors});
     }
+  },
+
+  elementAdd: async function(req, res) {
+    let LOC = 'board.controller.elementAdd';
+    try {
+      let id = req.params.id;
+      let board = await boardModel.openById(_getSession(req), id);
+      let element = req.body;
+      element = await boardModel.elementAdd(_getSession(req), board, element)
+      ApiReturn.result(req, res, element, LOC)
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC)
+    }
+  },
+  elementUpdate: async function(req, res) {
+    let LOC = 'board.controller.elementUpdate';
+    try {
+      let id = req.params.id;
+      let board = await boardModel.openById(_getSession(req), id);
+      let element = req.body;
+      element = await boardModel.elementUpdate(_getSession(req), board, element)
+      ApiReturn.result(req, res, element, LOC)
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC)
+    }
+  },
+
+  elementRemove: async function(req, res) {
+    let LOC = 'board.controller.elementUpdate';
+    try {
+      let id = req.params.id;
+      let board = await boardModel.openById(_getSession(req), id);
+      let data = await boardModel.elementRemove(_getSession(req), board, req.params.elementId)
+      ApiReturn.result(req, res, data, LOC)
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC)
+    }
   }
+
 
 
 
