@@ -16,6 +16,7 @@ const Const = require('../vendors/lib/const')
 const Logging = require('../vendors/lib/logging');
 const Joi = require('joi');
 const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
+const validateUUID = require('uuid').validate;
 
 const historyActions = {
   imageAdd: 'image.add',
@@ -43,11 +44,12 @@ const UpdateSchema = Joi.object({
 })
 
 const ElementInsertSchema = Joi.object({
-  key: Joi.string().max(50).required(),
+  key: Joi.string().max(50),
   type: Joi.string().required(),
   title: Joi.string().min(3).max(100),
 
   description: Joi.string().allow(null, ''),
+  elements: Joi.array().items(Joi.string())
 })
 
 const ElementUpdateSchema = Joi.object({
@@ -58,6 +60,9 @@ const ElementUpdateSchema = Joi.object({
   description: Joi.string().allow(null, ''),
 })
 
+const _isGroupType = (elm) => {
+  return ['group'].indexOf(elm.type) >= 0
+}
 
 const READ = 1;
 const WRITE = 2;
@@ -441,6 +446,41 @@ module.exports = {
   },
 
 
+  _findElmentKey(elements, key) {
+    for (let elm in elements) {
+      if (elements[elm].key === key) {
+        return true;
+      }
+    }
+    return false;
+  },
+  /**
+   * checks that element.key is unique or missing
+   * when missing it will create a unique id
+   * @param board
+   * @param element
+   * @private
+   */
+  _validateElementKey(board, element) {
+    if (element.key) {
+      for (let id in board.elements) {
+        if (board.elements[id].key === element.key && !(element.id && id !== element.id)) {
+          throw new StatusError({message: `element key ${element.key} is not unique`, status: 409});
+        }
+      }
+    } else {
+      // try finding a new key
+      let index = 1;
+      while (element.key === undefined) {
+        if (!this._findElmentKey(board.elements, `${element.type}.${index}`)) {
+          element.key = `${element.type}.${index}`;
+        } else {
+          index++
+        }
+      }
+    }
+    return true;
+  },
   /**
    *  add add a new image. Return
    * @param {Session} session
@@ -451,10 +491,30 @@ module.exports = {
   async elementAdd(session, board, element) {
     this._validateSession(session);
     this.validate(ElementInsertSchema, element)
+    this._validateElementKey(board, element)
 
     element.id = uuidv4();
     if (!board.elements) {
       board.elements = {}
+    }
+    // if a group element, we must transform it
+    if (_isGroupType(element) && element.elements && element.elements.length) {
+      let items = [];
+      for (let index = 0; index < element.elements.length; index++) {
+        if (typeof element.elements[index] === 'string') {
+          if (validateUUID(element.elements[index]) && board.elements[element.elements[index]]) {
+            items.push({id: element.elements[index]})
+          } else {
+            throw new StatusError({message: 'unknown element', statu: 404})
+          }
+        } else if (typeof element.elements[index] === 'object') {
+          let id = this.elementAdd(session, board, element.elements[index]);
+          items.push({id})
+        }
+      }
+      element.elements = items;
+    } else {
+      delete element.elements;
     }
     board.elements[element.id] = element
     this._historyAdd(session, board, historyActions.elementAdd, element)
@@ -485,6 +545,93 @@ module.exports = {
     }
     delete board.elements[elementId]
     this._historyAdd(session, board, historyActions.elementRemove, elementId)
+    return this.save(session, board.id, board, ['history', 'elements']).then( () => {
+      return board
+    });
+  },
+
+  /**
+   * appends, moves, removes the element to group Element
+   * @param session
+   * @param board
+   * @param parentId the element id that holds the group
+   * @param actionObj Object:
+   *      - action: String (add, remove, move)
+   *      - index: integer = target position
+   *      - childId: String id of the element // most important
+   *      - child: Object Element to store
+   * @returns {Promise<void>}
+   */
+  async elementChildren(session, board, parentId, actionObj) {
+    this._validateSession(session);
+    if (!board.elements[parentId]) {
+      throw new StatusError({message: 'group element not found', status: 404})
+    }
+    if (!_isGroupType(board.elements[parentId])) {
+      throw new StatusError({message: 'not a group', status: 409})
+    }
+    let parentElement = board.elements[parentId];
+    let childId =  (actionObj.childId) ? actionObj.childId : actionObj.chidld && actionObj.child.id ? actionObj.child.id : undefined
+
+    if (childId) {
+      if (!board.elements[childId]) {
+        throw new StatusError({message: 'element not found', status: 404})
+      }
+    } else if (actionObj.child) {
+      childId = (await this.elementAdd(session, board, actionObj.child)).id
+    } else if (!(actionObj.action === 'move' && actionObj.fromIndex !== undefined)) {
+      throw new StatusError({message: 'no element defined', status: 422})
+    }
+    let index = actionObj.index;
+
+    // the entries in the element are {id: [the link], otherParams}
+    switch(actionObj.action) {
+      case 'add':
+        if (parentElement.elements.find( (e) => e.id === childId)) {
+          return false; // is already added
+        }
+        if (index !== undefined && index >= 0 && index < parentElement.elements.length) {
+          parentElement.elements.splice(index, 0, {id: childId})
+        } else {
+          parentElement.elements.push({id: childId})
+        }
+        break;
+      case 'remove':
+        if (index !== undefined && index >= 0 && index < parentElement.elements.length) {
+          parentElement.elements.splice(index, 1)
+        } else {
+          index = parentElement.elements.findIndex( (e) => e.id === childId);
+          if (index >= 0) {
+            parentElement.splice(index, 1)
+          } else {
+            throw new StatusError({message: 'element not part of group', status: 404})
+          }
+        }
+        break;
+      case 'move':
+        // index is where it has to land
+        if (index !== undefined && (index < 0 || index >= parentElement.elements.length)) {
+          throw new StatusError({message: 'index out of range', status: 409})
+        }
+        index = actionObj.index
+        if (index < 0) {
+          throw new StatusError({message: 'element not part of group', status: 404})
+        }
+        let fromIndex = actionObj.fromIndex ? actionObj.fromIndex : parentElement.elements.findIndex( (e) => e.id === childId);
+        if (fromIndex < 0 && fromIndex >= parentElement.elements.length) {
+          throw new StatusError({message: 'could not find from position', status: 500})
+        }
+        parentElement.elements.splice(index, 0, parentElement.elements[fromIndex]);
+        if (index > fromIndex) {
+          parentElement.elements.splice(fromIndex, 1); // because we did insert
+        } else if (index < fromIndex) {
+          parentElement.elements.splice(fromIndex + 1, 1); // because we did insert
+        }
+        break;
+      default:
+        throw new Error(`unknown element action ${actionObj.action}`)
+    }
+    this._historyAdd(session, board, historyActions.elementUpdate, childId)
     return this.save(session, board.id, board, ['history', 'elements']).then( () => {
       return board
     });

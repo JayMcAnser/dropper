@@ -151,11 +151,13 @@ describe('models.board', () => {
     });
   });
 
-  describe('element', () => {
+  describe('element - general', () => {
     let elmId;
-    it('create', async() => {
+    let grpId;
+
+    it('create - text', async() => {
       let board = await Board.open(session, TEST_NAME);
-      let element = await Board.elementAdd(session, board, {type: 'text', key: 'key1'});
+      let element = await Board.elementAdd(session, board, {type: 'text', key: 'key.1'});
       assert.isDefined(element.id, 'return create an element id');
       elmId = element.id;
     });
@@ -164,7 +166,29 @@ describe('models.board', () => {
       assert.isDefined(board.elements)
       assert.isTrue(Object.keys(board.elements).length > 0)
     });
+    it('create - group', async() => {
+      let board = await Board.open(session, TEST_NAME);
+      let grpElm = await Board.elementAdd(session, board, {type: 'group', elements: [elmId]});
+      assert.isDefined(grpElm.id, 'return create an element id');
+      board = await Board.open(session, TEST_NAME);
+      assert.equal(Object.keys(board.elements).length, 2);
+      assert.equal(board.elements[grpElm.id].key, 'group.1');
+      assert.isDefined(board.elements[grpElm.id].elements)
+      assert.equal(board.elements[grpElm.id].elements.length, 1)
+      assert.equal(board.elements[grpElm.id].elements[0].id, elmId);
+      grpId = grpElm.id
+    });
 
+    it('key unique', async () => {
+      let board = await Board.open(session, TEST_NAME);
+      try {
+        let element = await Board.elementAdd(session, board, {type: 'text', key: 'key.1'});
+        assert.fail('should throw duplicate error')
+      } catch( e) {
+        assert.equal(e.status, 409)
+      }
+
+    })
 
     it ('remove', async () => {
       let board = await Board.open(session, TEST_NAME);
@@ -172,6 +196,48 @@ describe('models.board', () => {
       let element = await Board.elementRemove(session, board, elmId);
       board = await Board.open(session, TEST_NAME);
       assert.equal(Object.keys(board.elements).length, cnt -1)
+      await Board.elementRemove(session, board, grpId)
     })
+
+  })
+
+  describe('element - movement basic', () => {
+    let elmId;
+    let board;
+    let txtElement;
+    let grpElement;
+    let extra
+
+    before( async () => {
+      board = await Board.open(session, TEST_NAME);
+      assert.equal(Object.keys(board.elements).length, 0)
+      txtElement = await Board.elementAdd(session, board, {type: 'text',  description: 'this is the description'});
+      grpElement = await Board.elementAdd(session, board, {type: 'group', elements:[txtElement.id]});
+
+    })
+
+    it('append an element', async() => {
+      extra = await Board.elementAdd(session, board, {type: 'text', description: 'nr 2'});
+      assert.isDefined(extra.id, 'return create an element id');
+      let b = await Board.elementChildren(session, board, grpElement.id, {action: 'add', childId: extra.id})
+      assert.equal(b.elements[grpElement.id].elements.length, 2)
+      assert.equal(b.elements[grpElement.id].elements[1].id, extra.id)
+    });
+    it('add at position', async() => {
+      extra = await Board.elementAdd(session, board, {type: 'text', description: 'nr 3'});
+      assert.isDefined(extra.id, 'return create an element id');
+      let b = await Board.elementChildren(session, board, grpElement.id, {action: 'add', childId: extra.id, index: 0})
+      assert.equal(b.elements[grpElement.id].elements.length, 3)
+      assert.equal(b.elements[grpElement.id].elements[0].id, extra.id)
+    });
+    it('move', async() => {
+      board = await Board.open(session, TEST_NAME);
+      assert.equal(board.elements[grpElement.id].elements[0].id, extra.id)
+      let id = grpElement.elements[2].id
+      let b = await Board.elementChildren(session, board, grpElement.id, {action: 'move', index: 0, fromIndex:2 })
+      assert.equal(b.elements[grpElement.id].elements.length, 3)
+      assert.equal(b.elements[grpElement.id].elements[0].id, id)
+    })
+    // ToDO: lots more testing moving things around
   })
 });

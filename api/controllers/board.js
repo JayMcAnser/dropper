@@ -114,13 +114,13 @@ module.exports = {
       let id = req.params.id;
       let board = await boardModel.openById(_getSession(req), id);
       let element = req.body;
+      element.id = req.params.elementId
       element = await boardModel.elementUpdate(_getSession(req), board, element)
       ApiReturn.result(req, res, element, LOC)
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }
   },
-
   elementRemove: async function(req, res) {
     let LOC = 'board.controller.elementUpdate';
     try {
@@ -131,9 +131,19 @@ module.exports = {
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }
+  },
+  elementChild: async function (req, res) {
+    let LOC = 'board.controller.elementUpdate';
+    try {
+      let id = req.params.id;
+      let board = await boardModel.openById(_getSession(req), id);
+      let elementId = eq.params.elementId
+      let data = await boardModel.elementRemove(_getSession(req), board, req.params.elementId)
+      ApiReturn.result(req, res, data, LOC)
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC)
+    }
   }
-
-
 
 
 }
