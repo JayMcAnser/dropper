@@ -2,7 +2,7 @@
   <div>
     <component v-for="element in elements" :key="element.id"
       :is="componentType(element)"
-      :element="element"
+      :id="element.id"
     >
     </component>
   </div>
@@ -13,6 +13,7 @@ import ElementUnknown from './element-unknown'
 import ElementText from './element-text';
 import ElementImage from './element-image';
 import ElementCanvas from './element-canvas';
+import {debug} from '../vendors/lib/logging';
 
 const COMPONENT_TYPE = {
   unknown: ElementUnknown,
@@ -23,7 +24,8 @@ const COMPONENT_TYPE = {
 export default {
   name: "element-list",
   data: function() {
-    return {       
+    return {  
+      elementsData: []     
     }
   },
   props: {
@@ -32,15 +34,24 @@ export default {
       require: true
     }
   },
+  // watch: {
+  //   elements: async function() {
+  //     this.elementsData = await this.$store.dispatch('board/elements', this.elements)
+  //   }
+  // },
   computed: {
-   
+    
   },
-  methods: {
-     componentType(element) {
-      if (!COMPONENT_TYPE.hasOwnProperty(element.type)) {
+  methods: {   
+    
+    componentType(element) {  
+      
+      let elm = this.$store.getters['board/element'](element.id);
+      debug(elm, 'element.list')  
+      if (!elm.type) {
         return COMPONENT_TYPE.unknown
       } else {
-        return COMPONENT_TYPE[element.type]
+        return COMPONENT_TYPE[elm.type]
       }
     }    
   },

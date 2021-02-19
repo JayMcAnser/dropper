@@ -1,8 +1,10 @@
 
 import { axiosActions } from '../vendors/lib/const';
 import { debug, warn, error, newError } from '../vendors/lib/logging';
-import Axios from '../vendors/lib/axios';
+import Axios, { setHeaders } from '../vendors/lib/axios';
 import {apiState} from '../vendors/lib/const';
+import Vue from 'vue';
+
 // import {Headers} from '../vendors/lib/axios';
 
 const isNew = (data) => {
@@ -12,6 +14,8 @@ export const state = () => ({
   activeColumnIndex: 0,
   boards: [],
   activeBoardIndex: -1,
+  // the id holding element entry that defined the display columns
+  columnsId: '',  
   counter: 0
 })
 
@@ -76,7 +80,15 @@ export const mutations = {
     if (index !== false) {
       if (state.activeBoardIndex !== index) {
         // only change the active index if it changes
-        state.activeColumnIndex = 0;
+        state.activeColumnIndex = 0;    
+        state.columnsId = '';    
+        for (let id in board.elements) {
+          // todo we could choose the view here
+          if (board.elements[id].type === 'board') {
+            state.columnsId = id;
+            debug(`column:  ${JSON.stringify(board.elements[id])}`, 'state')
+          }
+        }
         state.activeBoardIndex = index
       }
     }  
@@ -85,6 +97,7 @@ export const mutations = {
     state.boards = [];
     state.activeBoardIndex = -1;
     state.activeColumnIndex = 0;
+    state.columnsId = '';  
     debug(`clearCache done ${state.boards.length} boards`)
   }
 }
@@ -146,7 +159,7 @@ export const actions = {
       let res = await Axios.get(url);   
       if (axiosActions.isOk(res)) {             
         await dispatch('status/apiStatus', apiState.ready, {root: true})
-//        debug(`found it ${JSON.stringify(res)}`)  
+        // debug(`found it ${JSON.stringify(res)}`)  
         commit('setBoard', axiosActions.data(res));        
         commit('activateBoard', axiosActions.data(res))  
         return getters.active;
@@ -189,11 +202,12 @@ export const actions = {
   },
 
   async save({commit, dispatch, rootGetters}, data) {
-    const FUN = 'store.board.save';
+    const LOC = 'store.board.save';
     await dispatch('status/clear', '', {root: true});
     let result;
     try {
       // Headers(rootGetters['auth/token'])
+      debug(data,LOC)
       if (isNew(data)) {
         result = await Axios.post('board', data);        
         if (axiosActions.isOk(result)) {   
@@ -215,18 +229,48 @@ export const actions = {
           return true
         }
       }
-      let err = newError(axiosActions.errors(result), FUN)      
+      let err = newError(axiosActions.errors(result), LOC)      
       dispatch('status/error', err, {root: true})                
       return false;
     } catch(e) {
-      dispatch('status/error', newError(e, FUN), {root: true}) 
+      dispatch('status/error', newError(e, LOC), {root: true}) 
       throw e;
     }
   },
-
+  /**
+   * convert an array of [{id:...},...] to an array of elements
+   */
+  async elements({commit, getters}, list) {
+    const LOC = 'board.elements'
+    try {
+      let result = []
+      let board = getters.active;
+      for (let index = 0; index < list.length; index++) {
+        if (board.elements[list[index].id]) {
+          result.push(board.elements[list[index].id])
+        } else {
+          warn(`unknown id ${list[index].id} in board ${board.id} list`, LOC)
+        }
+      }
+      return result;
+    } catch (e) {
+      error(e.message, `${LOC}.catch`)
+      throw e;
+    }
+  },
   async reset({commit}) {
     debug('reset', 'store.board.reset')
     await commit('clearCache')
+  },
+
+  async setBoard({commit}, board) {
+    debug(`id: ${board.id}`, 'store.board.setBoard')
+    commit('setBoard', board)
+  },
+
+  async setElement({commit, getters}, element) {
+    let board = getters.active;
+    Vue.set(board.elements, element.id, element)
   }
 }
 
@@ -240,22 +284,54 @@ export const getters = {
   },
   active: state => {    
     if (state.activeBoardIndex < 0 || state.activeBoardIndex >= state.boards.length) {
-      return {columns: []} // an invalid board
+      warn(`no board active ${state.activeBoardIndex}`, 'store.board.active')      
+      return {elements: []} // an invalid board
     } else {
       return state.boards[state.activeBoardIndex];
     }
   },
+  id: state => {
+    if (state.activeBoardIndex < 0 || state.activeBoardIndex >= state.boards.length) {
+      throw new newError('no board active', 'store.board.boardId')
+    }
+    return state.boards[state.activeBoardIndex].id
+  },
+  xxx: state => {
+    return getters.active(state).element;
+  },
+  element: (state) => (id) => {
+    let board = getters.active(state);
+    if (id < 0) {
+      return {
+        type: 'text'
+      }
+    } else if (board.elements[id]) {
+      return board.elements[id];
+    } else {
+      throw new Error(`unknown element id ${id}`)
+    }   
+  },
+  /**
+   * returns the column that active   
+   */
   column: (state) => {
     const LOC = 'board.column'    
-    let board = getters.active(state)    
-    if (state.activeColumnIndex < 0 || ! board.columns || state.activeColumnIndex >= board.columns.length) {
+    let columns = getters.columns(state);    
+    if (state.activeColumnIndex < 0 || ! columns || state.activeColumnIndex >= columns.length) {
+      debug(`no columns found in ${state.columnsId}`)
       return {}
     }
-    return board.columns[state.activeColumnIndex]
+    let board = getters.active(state); 
+    let colId = columns[state.activeColumnIndex].id
+    return board.elements[colId]
   },
+  /**
+   * returns an array of columns   
+   */
   columns: (state) => {   
-    let board = getters.active(state)
-    return board.columns
+    let board = getters.active(state);    
+    let columns = board.elements[state.columnsId]
+    return columns.elements
   },
   count: (state) => {
     return state.counter

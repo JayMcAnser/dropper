@@ -11,15 +11,15 @@
       @retry="onRetry"
       @cancel="onCancel"
     ></error-dialog>
-    <column-dialog>
-    </column-dialog>
+    <element-dialog>
+    </element-dialog>
   </div>
 </template>
 
 <script>
 
 import BoardBar from '../components/board-bar.vue'
-import ColumnDialog from '../components/column-dialog.vue'
+import ElementDialog from '../components/element-dialog.vue'
 import ColumnView from '../components/column-view.vue'
 import ErrorDialog from '../vendors/components/error-dialog.vue'
 import {debug, error} from '../vendors/lib/logging'
@@ -30,6 +30,7 @@ export default {
   data: function() {
     return {    
       columnDialog: false,
+      isLoaded: false,
     }
   },
   params: {
@@ -39,23 +40,36 @@ export default {
     BoardBar,
     ColumnView,    
     ErrorDialog,
-    ColumnDialog
+    ElementDialog
   },
   computed: {
     board() {
-      let board = this.$store.getters['board/active'];
-      // debug(`loading board ${JSON.stringify(board)}`) 
-      return this.$store.getters['board/active'];
+      if (this.isLoaded) {
+        let board = this.$store.getters['board/active'];
+        // debug(`loading board ${JSON.stringify(board)}`) 
+        return this.$store.getters['board/active'];
+      } else {
+        return {}
+      }
+      
     },
     columns() {
-      let columns = this.$store.getters['board/columns'];
-      // debug(`loading columns ${JSON.stringify(columns)}`) 
-      return this.$store.getters['board/columns'];
+      if (this.isLoaded) {
+        // let columns = this.$store.getters['board/columns'];
+        //debug(`loading columns ${JSON.stringify(columns)}`) 
+        return this.$store.getters['board/columns'];
+      } else {
+        return []
+      }
     },
     column() {
-      let column = this.$store.getters['board/column'];
-      // debug(`column: ${JSON.stringify(column)}`)
-      return this.$store.getters['board/column']
+      if (this.isLoaded) {
+        let column = this.$store.getters['board/column'];
+        debug(`column: ${JSON.stringify(column)}`)
+        return column
+      } else {
+        return {}
+      }
     }  
 
   },
@@ -72,6 +86,7 @@ export default {
       // debug(`activate board`)
       if (this.$route.params.id) {      
         await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 
+        this.isLoaded = true;
       } else {
         debug('open active board', 'page.board')
       }
@@ -84,12 +99,11 @@ export default {
   },
   async mounted() {
     try {
-      // debug('route changed', 'board.mounted')
+      debug('route changed', 'board.mounted')
       await this.reload();      
     } catch(e) {
       error(e, 'page.board')
-    }
-    
+    }    
   }
 }
 </script>

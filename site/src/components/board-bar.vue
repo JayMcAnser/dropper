@@ -29,7 +29,7 @@
     props: {
       columns: {
         type: Array,
-        required: true
+        required: false
       }
     },
      computed: {

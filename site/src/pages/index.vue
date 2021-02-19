@@ -117,7 +117,7 @@ export default {
           this.$router.push(active.actionURL);
         } else if (active.action) {
           await this.$store.dispatch('status/rightDrawer', false)
-          await this.$store.dispatch('status/dialog', {name: 'columnDialog', id:-1});
+          await this.$store.dispatch('status/dialog', {name: 'elementDialog', id:-1});
         } else {
           warn(`no action in ${JSON.stringify(active)}`, 'page.index');
         }

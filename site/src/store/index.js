@@ -5,6 +5,7 @@ Vue.use(Vuex)
 
 
 import {board} from './board';
+import {element} from './element';
 import {auth} from '../vendors/store/auth';
 import {status} from '../vendors/store/status';
 
@@ -32,6 +33,7 @@ const store = new Vuex.Store({
   modules: {
     defaultModule,
     board: board,
+    element,
     auth,
     status
   }

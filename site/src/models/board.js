@@ -12,4 +12,6 @@ const Board= {
     }
   }
 }
+
+
 export const Board;

@@ -7,9 +7,11 @@
     > 
       <v-card>
         <v-card-title>
-          <span class="headline">Element definition</span>
+          <span class="headline">Element definition</span><br>          
         </v-card-title>
         <v-card-text>
+          <small>id: {{element.id}}</small>
+        </v-card-text>        
           <v-container>
             <v-row>
               <v-col
@@ -18,9 +20,9 @@
                 md="4"
               >
                 <v-text-field
-                  v-model="name"
-                  label="Name*"
-                  hint="for refer"
+                  v-model="element.key"
+                  label="Key*"
+                  hint="for referer"
                   required
                 ></v-text-field>
               </v-col>
@@ -32,7 +34,7 @@
               >
                 <v-text-field
                   label="Title"
-                  v-model="title"
+                  v-model="element.title"
                   hint="The title to display"
                   persistent-hint                  
                 ></v-text-field>
@@ -43,14 +45,15 @@
                 md="4"
               >
                 <v-autocomplete
-                  v-model="type"
+                  v-model="element.type"
                   :items="['text', 'image', 'column', 'container']"
-                  label="Type"
+                  label="element.Type"
                   hint="Type of element"
                   persistent-hint
                   reqiored
                 ></v-autocomplete>
               </v-col>
+<!--              
               <v-col
                 cols="12"
                 md="4"
@@ -64,10 +67,11 @@
                   persistent-hint
                 ></v-autocomplete>
               </v-col>
+-->              
             </v-row>
           </v-container>
-          <small>*indicates required field</small>
-        </v-card-text>
+          
+        
         <v-card-actions>
           <v-spacer></v-spacer>
           <v-btn
@@ -92,22 +96,20 @@
 
 <script>
 import { debug } from '../vendors/lib/logging';
+import Factory from '../lib/factory';
 
 export default {
-  name: "column-dialog",
+  name: "element-dialog",
   data: function() {
-    return {   
-      name: '',
-      title: '',
-      type: 'text',
-      tags: []         
+    return {     
+      element: {},      
     }
   },
   computed: {
   
     dialog: {
       get: function() {
-        return this.$store.getters['status/dialogName'] === 'columnDialog'
+        return this.$store.getters['status/dialogName'] === 'elementDialog'
       }, 
       set: function(value) {
         this.$store.dispatch('status/dialog', false)
@@ -116,21 +118,22 @@ export default {
   } ,
   watch: {
     dialog: function(val) {
-      if (val) {
+      if (val) {      
         this.loadData(this.$store.getters['status/dialogId']);
       }
     }
   },
   methods: {  
-    doSubmit() {
+    async doSubmit() {
+      await this.$store.dispatch('element/save', this.element)
       this.dialog = false;
     },
-    loadData(id) {
-      if (id) {
-
-      } else {
-
-      }
+    async loadData(id) {
+      this.id = id;            
+      await this.$store.dispatch('element/activate', {id: this.id})
+      this.element = Factory(this.$store.getters['element/data']);    
+      debug(`element: ${JSON.stringify(this.element)}`, 'dialog.element.load')    
+      console.log(this.element)
     }
 
   }

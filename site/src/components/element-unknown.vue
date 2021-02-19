@@ -1,6 +1,25 @@
 <template>
   <v-card>    
-    <v-card-title>{{elementType}}</v-card-title>
+    <v-card-title
+    >
+      {{elementType}}
+      <v-spacer></v-spacer>
+      <btn-edit-element
+        :element="element"
+        >
+      </btn-edit-element>
+      <div>  
+        <!--    
+      <v-btn 
+        class="text-right" 
+        icon
+        @click="editElement">
+        <v-icon>mdi-pencil
+        </v-icon>  
+      </v-btn>
+      -->
+      </div>
+    </v-card-title>
     <v-card-actions>
       <v-btn
         color="orange lighten-2"
@@ -51,22 +70,30 @@
 <script>
 
 import { pickBy} from 'lodash';
+import btnEditElement from './btn-edit-element.vue';
 
 // hide properties from the info bar
 const HIDDEN_PROPERTIES = 
   ['type'];
 
 export default {
+  components: { btnEditElement },
   name: "element-unknown",
   data: function() {
     return {       
-      showProperties: false
+      showProperties: false,
+      element,
     }
   },
   props: {
-    element: {
-      type: Object,
+    id: {
+      type: String,
       required: true
+    }
+  },
+  watch: {
+    id: function(val) {
+      this.element = this.$store.getters['board/element'](this.id)
     }
   },
   computed: {
@@ -80,7 +107,9 @@ export default {
     }
   },
   methods: {
-    
+    async editElement() {
+      await this.$store.dispatch('status/dialog', {name: 'elementDialog', id: this.element.id});
+    }
   },
 }
 </script>
