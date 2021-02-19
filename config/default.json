@@ -20,7 +20,9 @@
     "siteRoot": "dist"
   },
   "Logging": [
-    { "type": "access", "format":  "tiny", "filename": "access.curator.log"}
+    { "type": "access", "format":  "tiny", "filename": "access.curator.log"},
+    { "type": "console", "level": "debug", "format": "timestamp"}
+
   ],
   "Board": {
     "indexFilename": "index.json"

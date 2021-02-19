@@ -102,8 +102,8 @@ module.exports = {
       let id = req.params.id;
       let board = await boardModel.openById(_getSession(req), id);
       let element = req.body;
-      element = await boardModel.elementAdd(_getSession(req), board, element)
-      ApiReturn.result(req, res, element, LOC)
+      board = await boardModel.elementAdd(_getSession(req), board, element)
+      ApiReturn.result(req, res, board, LOC)
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }
@@ -115,8 +115,8 @@ module.exports = {
       let board = await boardModel.openById(_getSession(req), id);
       let element = req.body;
       element.id = req.params.elementId
-      element = await boardModel.elementUpdate(_getSession(req), board, element)
-      ApiReturn.result(req, res, element, LOC)
+      board = await boardModel.elementUpdate(_getSession(req), board, element)
+      ApiReturn.result(req, res, board, LOC)
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }
@@ -126,8 +126,8 @@ module.exports = {
     try {
       let id = req.params.id;
       let board = await boardModel.openById(_getSession(req), id);
-      let data = await boardModel.elementRemove(_getSession(req), board, req.params.elementId)
-      ApiReturn.result(req, res, data, LOC)
+      board = await boardModel.elementRemove(_getSession(req), board, req.params.elementId)
+      ApiReturn.result(req, res, board, LOC)
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }

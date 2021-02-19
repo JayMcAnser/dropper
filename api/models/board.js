@@ -61,7 +61,7 @@ const ElementUpdateSchema = Joi.object({
 })
 
 const _isGroupType = (elm) => {
-  return ['group'].indexOf(elm.type) >= 0
+  return ['group','board','column'].indexOf(elm.type) >= 0
 }
 
 const READ = 1;
@@ -519,7 +519,7 @@ module.exports = {
     board.elements[element.id] = element
     this._historyAdd(session, board, historyActions.elementAdd, element)
     return this.save(session, board.id, board, ['history', 'elements']).then( () => {
-      return element
+      return Object.assign(board, {_newElementId: element.id})
     });
   },
 
@@ -534,7 +534,7 @@ module.exports = {
     }
     this._historyAdd(session, board, historyActions.elementUpdate, element)
     return this.save(session, board.id, board, ['history', 'elements']).then( () => {
-      return element
+      return board
     });
   },
 
