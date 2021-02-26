@@ -14,4 +14,4 @@ const Board= {
 }
 
 
-export const Board;
+//export const Board;
