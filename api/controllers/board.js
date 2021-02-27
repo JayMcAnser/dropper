@@ -3,10 +3,16 @@ const Const = require('../vendors/lib/const');
 const ApiReturn = require('../vendors/lib/api-return');
 const AuthController = require('../vendors/controllers/auth')
 const validateUUID = require('uuid').validate;
+
 const _getSession = function(req) {
+  if (req.session) {
+    return req.session
+  }
+  console.error('mission req.session');
+
   return {
     userId: req.session.user ? req.session.user.id : '0',
-    log: req.session.log
+    log: req.session.log,
   }
 }
 
@@ -94,6 +100,21 @@ module.exports = {
       ApiReturn.error(req, res, e, LOC, 200);
       // res.json({status: Const.status.error, message: e.message, data:e.errors});
     }
+  },
+
+  delete: async function(req, res) {
+    const LOC = 'board.controller.delete';
+    try {
+      let board = await boardModel.delete(_getSession(req), req.params.id, req.body);
+      ApiReturn.result(req, res, board, LOC)
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC, 200);
+
+    }
+  },
+
+  elementId: async function(req, res) {
+    ApiReturn.result(req, res, await boardModel.elementId(_getSession(req)), 'controller.board.elementId')
   },
 
   elementAdd: async function(req, res) {

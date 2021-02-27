@@ -44,6 +44,7 @@ const UpdateSchema = Joi.object({
 })
 
 const ElementInsertSchema = Joi.object({
+  id: Joi.string().allow(null, ''),
   key: Joi.string().max(50),
   type: Joi.string().required(),
   title: Joi.string().min(3).max(100),
@@ -58,10 +59,17 @@ const ElementUpdateSchema = Joi.object({
   type: Joi.string(),
   title: Joi.string().min(3).max(100),
   description: Joi.string().allow(null, ''),
+  elements: Joi.array().items(Joi.object( {
+    id: Joi.string(),
+  }))
 })
 
 const _isGroupType = (elm) => {
   return ['group'].indexOf(elm.type) >= 0
+}
+
+const _writingLayout = (session) => {
+  return session.user.debug ? session.user.debug.jsonLayout: {}
 }
 
 const READ = 1;
@@ -76,14 +84,17 @@ module.exports = {
   },
 
   _validateSession: function(session) {
-    if (!session.userId) {
+    if (session.user === undefined) {
       throw new Error(`[board] ${Const.results.missingSession}`);
     }
     return true;
   },
 
   _validateRights: function(session, board, rights) {
-    if (session.userId === this.ROOT_USER || session.userId === board.ownerId) {
+    if (!board.ownerId) {
+      session.log('warn', `missing owner in board ${board.id}`)
+    }
+    if (session.user.id === this.ROOT_USER || session.user.id === board.ownerId) {
       return true; // owner has ALL rights
     }
     if (board.isPublic) {
@@ -102,21 +113,28 @@ module.exports = {
     let boards = []
     for (let index = 0; index < boardIds.length; index++) {
       try {
-        let board = JsonFile.readFileSync(Path.join(dirName, boardIds[index], Config.get('Board.indexFilename')));
-        if (board.ownerId === session.userId ||
-          board.isPublic ||
-          session.userId === this.ROOT_USER ||
-          board.users.findIndex( (u) => u.userId === session.userId) >= 0) {
-          boards.push({
-            id: boardIds[index],
-            name: board.name,
-            title: board.title,
-            isPublic: board.isPublic,
-            description: board.description,
-          })
+        let path = Path.join(dirName, boardIds[index], Config.get('Board.indexFilename'));
+        if (Fs.existsSync(path)) {
+          let board = JsonFile.readFileSync(path);
+          if (board.ownerId === session.user.id ||
+            board.isPublic ||
+            session.user.id === this.ROOT_USER ||
+            board.users.findIndex( (u) => u.user.id === session.user.i) >= 0) {
+            // the basic fields to filter
+            boards.push({
+              id: boardIds[index],
+              name: board.name,
+              title: board.title,
+              isPublic: board.isPublic,
+              ownerId: board.ownerId,
+              description: board.description,
+            })
+          }
+        } else {
+          Logging.log('warn', `[_loadBoards] the index for ${boardIds[index]} does not exist`)
         }
       } catch (e) {
-        Logging.log('warn', `opening baord ${boardIds[index]} returns an error: ${e.message}`)
+        Logging.log('warn', `[_loadBoards] opening baord ${boardIds[index]} returns an error: ${e.message}`)
       }
     }
     return boards;
@@ -126,7 +144,7 @@ module.exports = {
     if (!board.history) { board.history = []}
     let hist = {
       date: Date.now(),
-      userId: session.userId,
+      userId: session.user.id,
       action: action
     }
     if (message) {
@@ -163,11 +181,11 @@ module.exports = {
       id: uuidv4(),
       name: board.name,
       title: board.title ? board.title: board.name,
-      ownerId: session.userId,
+      ownerId: session.user.id,
       isPublic: !!board.isPublic,
       users: [],
       description: '',
-      history: [{userId: session.userId, date: Date.now(), type: 'created'}],
+      history: [{userId: session.user.id, date: Date.now(), type: 'created'}],
       elements: board.elements ? board.elements: {}
     }
 
@@ -175,7 +193,7 @@ module.exports = {
       rootKey: 'Path.dataRoot',
       subDirectory: boardStore.id,
       makePath: true, returnPaths: true})
-    let result = await JsonFile.writeFile(filename, boardStore);
+    let result = await JsonFile.writeFile(filename, boardStore, _writingLayout(session));
     session.log('debug', `generate board ${boardStore.id} at ${filename}`);
     //ToDo: we should register our board to in the database
     Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'));
@@ -253,6 +271,7 @@ module.exports = {
         rootKey: 'Path.dataRoot',
         subDirectory: board.id
       })
+      // get all the data for this file
       if (Fs.existsSync(filename)) {
         return JsonFile.readFile(filename);
       }
@@ -274,7 +293,7 @@ module.exports = {
       subDirectory: board.id
     });
     if (Fs.existsSync(filename)) {
-      return JsonFile.writeFile(filename, board);
+      return JsonFile.writeFile(filename, board, _writingLayout(session));
     }
     throw new Error(Const.results.boardNotFound)
   },
@@ -318,7 +337,7 @@ module.exports = {
     for (let index = 0; index < fields.length; index++) {
       boardDef[fields[index]] = board[fields[index]];
     }
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
+    return this._write(session, boardDef)
   },
 
   _fieldIsWritable(fieldname) {
@@ -333,7 +352,7 @@ module.exports = {
         boardDef[fieldname] = board[fieldname]
       }
     }
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' }).then( () => {
+    return this._write(session, boardDef).then( () => {
       return this._returnData(boardDef, fields)
     })
   },
@@ -348,7 +367,7 @@ module.exports = {
     this._validateSession(session);
     let boardDef = await this._read(session, board)
     boardDef.isPublic = !!isPublic
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
+    return this._write(session, boardDef)
   },
 
   /**
@@ -360,7 +379,7 @@ module.exports = {
 
   async delete(session, boardName) {
     this._validateSession(session);
-    let board = await this.findOne(session, {name: boardName});
+    let board = await this.findOne(session, {id: boardName});
     if (board) {
       this._validateRights(session, board, DELETE)
       const Rimraf = require('rimraf');
@@ -482,6 +501,15 @@ module.exports = {
     return true;
   },
   /**
+   * generate a new element it
+   * @param session
+   * @returns {Promise<Object{id}>}
+   */
+  async elementId(session) {
+    return {id: uuidv4()}
+  },
+
+  /**
    *  add add a new image. Return
    * @param {Session} session
    * @param {Object} board
@@ -493,7 +521,7 @@ module.exports = {
     this.validate(ElementInsertSchema, element)
     this._validateElementKey(board, element)
 
-    element.id = uuidv4();
+    element.id = element.id || uuidv4();
     if (!board.elements) {
       board.elements = {}
     }

@@ -1,8 +1,8 @@
 <template>
-  <v-card 
-    elevation="0">    
+  <v-card
+    elevation="0">
     <v-card-title>
-      id: {{id}}
+      id: {{element.id}}
       {{element.title}}
       <v-spacer></v-spacer>
       <btn-edit-element
@@ -11,9 +11,12 @@
       </btn-edit-element>
       <v-btn
         @click="add"
-      >add</v-btn>      
+      >add</v-btn>
+      <v-btn
+          @click="b"
+      >bbb</v-btn>
     </v-card-title>
-    <v-card-text>OOO{{title}}</v-card-text>
+    <v-card-text>OOO{{title}} -- {{text}}</v-card-text>
     <v-card-text v-if="element.description">{{element.description}}</v-card-text>
   </v-card>
 </template>
@@ -23,60 +26,63 @@
 import { pickBy} from 'lodash';
 import btnEditElement from './btn-edit-element.vue';
 import {debug} from '../vendors/lib/logging';
+import Vue from 'vue'
 
 // hide properties from the info bar
-const HIDDEN_PROPERTIES = 
+const HIDDEN_PROPERTIES =
   ['type'];
 
 export default {
   name: "element-text",
   data: function() {
-    return {       
+    return {
       showProperties: false,
-      element: {},
+      text: 'start',
+      backdoor: 0
     }
   },
   components: { btnEditElement },
   props: {
-    id: {
-      type: String,
-      required: true
+    element: {
+      type: Object,
+      required: true,
+      default: {}
     }
   },
   computed: {
     title() {
-      let elm = this.$store.getters['board/xxx']
-      if (elm) {
-        return elm[this.id].title
+      this.backdoor++
+      if (!this.element) {
+        return 'no value'
       }
-      return 'xx'
+      return this.element.title
     }
   },
-  watch: {
-    id: function(val) {      
-      this.element = this.$store.getters['board/element'](this.id)
-      debug(this.element, 'element-text')
-    }
-  },
-  mounted () {
-    this.element = this.$store.getters['board/element'](this.id)
-    debug(this.element, 'element-text.mounted')
-  },
+
+
   methods: {
+    b() {
+      this.text = 'bbb'
+    },
     async add() {
       let rec = Object.assign({}, this.element)
-      rec.title += 'a'
-      // this.element = rec;
+      rec.title += 'a';
+          // this.text += 'a'
+          // // this.element = rec;
+          // this.$set(this.element, 'title', this.text);
       // this does NOT work
       // this.$store.dispatch('element/save', rec)
       // but this does:
       // this.$store.getters['board/element'](rec.id).title = rec.title
       await this.$store.dispatch('element/save', rec)
+      debug(this.element, 'element-text')
+      debug(this.$store.getters['board/element'](this.element.id), 'direct')
+
     }
   },
 }
 </script>
 
 <style scoped>
- 
+
 </style>

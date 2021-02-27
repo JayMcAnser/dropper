@@ -14,8 +14,10 @@ router.get('/list', boardController.list);
 router.get('/:id', boardController.open)
 router.post('/', boardController.create);
 router.put('/:id', boardController.replace);
+router.delete('/:id', boardController.delete);
 router.patch('/:id', boardController.update)
 router.post('/:id/element', boardController.elementAdd);
+router.post('/:id/elementId', boardController.elementId);
 router.patch('/:id/element/:elementId',  boardController.elementUpdate);
 router.delete('/:id/element/:elementId', boardController.elementRemove);
 

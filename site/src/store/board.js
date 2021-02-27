@@ -15,7 +15,7 @@ export const state = () => ({
   boards: [],
   activeBoardIndex: -1,
   // the id holding element entry that defined the display columns
-  columnsId: '',  
+  columnsId: '',
   counter: 0
 })
 
@@ -25,13 +25,13 @@ const _copyField = function(source, dest, hiddenFields = false) {
   } else if (Array.isArray(hiddenFields)) {
     hiddenFields = [hiddenFields]
   }
-  
+
   for (let fieldname in source) {
     if (hiddenFields.indexOf(fieldname) < 0) {
       dest[fieldname] = source[fieldname]
     }
   }
-  return dest;  
+  return dest;
 }
 
 export const mutations = {
@@ -43,11 +43,11 @@ export const mutations = {
   },
   /**
    * update the full list of all boards
-   * @param {} state 
-   * @param {*} boards 
+   * @param {} state
+   * @param {*} boards
    */
   setBoards(state, boards) {
-    // todo: it should not replace is but merge is. 
+    // todo: it should not replace is but merge is.
     // because it just takes more time
     state.boards = boards
   },
@@ -62,8 +62,8 @@ export const mutations = {
       state.activeBoardIndex = -1
       return false;
     }
-    _copyField(board, state.boards[index]); 
-    // state.boards[index] = board;    
+    _copyField(board, state.boards[index]);
+    // state.boards[index] = board;
     return index
   },
   addBoard(state, board) {
@@ -80,24 +80,25 @@ export const mutations = {
     if (index !== false) {
       if (state.activeBoardIndex !== index) {
         // only change the active index if it changes
-        state.activeColumnIndex = 0;    
-        state.columnsId = '';    
+        state.activeColumnIndex = 0;
+        state.columnsId = '';
         for (let id in board.elements) {
           // todo we could choose the view here
           if (board.elements[id].type === 'board') {
             state.columnsId = id;
             debug(`column:  ${JSON.stringify(board.elements[id])}`, 'state')
+            break;
           }
         }
         state.activeBoardIndex = index
       }
-    }  
+    }
   },
   clearCache(state) {
     state.boards = [];
     state.activeBoardIndex = -1;
     state.activeColumnIndex = 0;
-    state.columnsId = '';  
+    state.columnsId = '';
     debug(`clearCache done ${state.boards.length} boards`)
   }
 }
@@ -112,12 +113,12 @@ export const actions = {
   increment(context) {
     context.commit('increment')
   },
-  
+
   /**
    * list all information from one board
    */
   async list({commit, dispatch, getters}) {
-    const FUN = 'store.board.load'    
+    const FUN = 'store.board.load'
     await dispatch('status/clear', '', {root: true})
     if (getters.boards.length) {
       // do not reload the board list if not needed
@@ -127,23 +128,23 @@ export const actions = {
       return getters.boards
     }
     try {
-      debug(`loading from server`, FUN)      
+      debug(`loading from server`, FUN)
       let res = await Axios.get('/board/list');
       if (axiosActions.isOk(res)) {
         commit('setBoards', axiosActions.data(res));
         commit('activeColumnIndex', 0)
         dispatch('auth/registerEvent', {name: 'boardList', action: ['logout', 'login'], call: 'board/reset'}, {root: true})
         return getters.boards;
-      }      
-      let err = newError(axiosActions.errors(res), FUN)      
+      }
+      let err = newError(axiosActions.errors(res), FUN)
       dispatch('status/error', err, {root: true})
       throw err;``
-    } catch (e) {           
-      dispatch('status/error', newError(e, FUN), {root: true})      
+    } catch (e) {
+      dispatch('status/error', newError(e, FUN), {root: true})
       throw new Error(e.message)
     }
   },
-    
+
 
   /**
    * defines the current board by setting the id
@@ -152,26 +153,26 @@ export const actions = {
   async activate({commit, dispatch, getters}, data) {
     const FUN = 'store.board.activate'
     await dispatch('status/clear', '', {root: true})
-    try {      
+    try {
       let url = `/board/${data.id}`
       debug(`activate board ${url}`)
       await dispatch('status/apiStatus', apiState.waiting, {root: true})
-      let res = await Axios.get(url);   
-      if (axiosActions.isOk(res)) {             
+      let res = await Axios.get(url);
+      if (axiosActions.isOk(res)) {
         await dispatch('status/apiStatus', apiState.ready, {root: true})
-        // debug(`found it ${JSON.stringify(res)}`)  
-        commit('setBoard', axiosActions.data(res));        
-        commit('activateBoard', axiosActions.data(res))  
+        // debug(`found it ${JSON.stringify(res)}`)
+        commit('setBoard', axiosActions.data(res));
+        commit('activateBoard', axiosActions.data(res))
         return getters.active;
       } else if (axiosActions.hasErrors(res)) {
-        let err = newError(axiosActions.errors(res), FUN)      
-        dispatch('status/error', err, {root: true})                
+        let err = newError(axiosActions.errors(res), FUN)
+        dispatch('status/error', err, {root: true})
       } else {
         warn(axiosActions.data(res), FUN)
         return axiosActions.data(res)
       }
     } catch(e) {
-      dispatch('status/error', newError(e, FUN), {root: true}) 
+      dispatch('status/error', newError(e, FUN), {root: true})
       throw e;
     }
   },
@@ -182,21 +183,21 @@ export const actions = {
     try {
 
       let url = `/board/${data.id}`
-      let res = await Axios.get(url);   
-      if (axiosActions.isOk(res)) {       
+      let res = await Axios.get(url);
+      if (axiosActions.isOk(res)) {
         await dispatch('status/apiStatus', apiState.ready, {root: true})
         commit('setBoard', axiosActions.data(res));
         return axiosActions.data(res)
       } else if (axiosActions.hasErrors(res)) {
-        let err = newError(axiosActions.errors(res), FUN)      
-        dispatch('status/error', err, {root: true})                
+        let err = newError(axiosActions.errors(res), FUN)
+        dispatch('status/error', err, {root: true})
         return false;
       } else {
         warn(axiosActions.data(res), FUN)
         return axiosActions.data(res); //?????
       }
     } catch(e) {
-      dispatch('status/error', newError(e, FUN), {root: true}) 
+      dispatch('status/error', newError(e, FUN), {root: true})
       throw e;
     }
   },
@@ -209,8 +210,8 @@ export const actions = {
       // Headers(rootGetters['auth/token'])
       debug(data,LOC)
       if (isNew(data)) {
-        result = await Axios.post('board', data);        
-        if (axiosActions.isOk(result)) {   
+        result = await Axios.post('board', data);
+        if (axiosActions.isOk(result)) {
           let board = axiosActions.data(result);
           debug(`create board id: ${board.id}`)
           // await dispatch('board/open', {dataid},  {root: true})
@@ -221,19 +222,19 @@ export const actions = {
         }
       } else {
         result = await Axios.patch(`board/${data.id}`, data)
-        if (axiosActions.isOk(result)) {   
+        if (axiosActions.isOk(result)) {
           let board = axiosActions.data(result)
           commit('setBoard', board);
-          commit('activateBoard', board);  
+          commit('activateBoard', board);
           await dispatch('status/apiStatus', apiState.ready, {root: true})
           return true
         }
       }
-      let err = newError(axiosActions.errors(result), LOC)      
-      dispatch('status/error', err, {root: true})                
+      let err = newError(axiosActions.errors(result), LOC)
+      dispatch('status/error', err, {root: true})
       return false;
     } catch(e) {
-      dispatch('status/error', newError(e, LOC), {root: true}) 
+      dispatch('status/error', newError(e, LOC), {root: true})
       throw e;
     }
   },
@@ -282,9 +283,9 @@ export const getters = {
   activeColumnIndex: state => {
     return state.activeColumnIndex;
   },
-  active: state => {    
+  active: state => {
     if (state.activeBoardIndex < 0 || state.activeBoardIndex >= state.boards.length) {
-      warn(`no board active ${state.activeBoardIndex}`, 'store.board.active')      
+      warn(`no board active ${state.activeBoardIndex}`, 'store.board.active')
       return {elements: []} // an invalid board
     } else {
       return state.boards[state.activeBoardIndex];
@@ -309,27 +310,27 @@ export const getters = {
       return board.elements[id];
     } else {
       throw new Error(`unknown element id ${id}`)
-    }   
+    }
   },
   /**
-   * returns the column that active   
+   * returns the column that active
    */
   column: (state) => {
-    const LOC = 'board.column'    
-    let columns = getters.columns(state);    
+    const LOC = 'board.column'
+    let columns = getters.columns(state);
     if (state.activeColumnIndex < 0 || ! columns || state.activeColumnIndex >= columns.length) {
       debug(`no columns found in ${state.columnsId}`)
       return {}
     }
-    let board = getters.active(state); 
+    let board = getters.active(state);
     let colId = columns[state.activeColumnIndex].id
     return board.elements[colId]
   },
   /**
-   * returns an array of columns   
+   * returns an array of columns
    */
-  columns: (state) => {   
-    let board = getters.active(state);    
+  columns: (state) => {
+    let board = getters.active(state);
     let columns = board.elements[state.columnsId]
     return columns.elements
   },
@@ -338,7 +339,7 @@ export const getters = {
   },
   publicImageRoot: (state, getters) => {
     return Axios.defaults.baseURL + '/public/image/' + getters.active.id + '/'
-  },   
+  },
 }
 
 export const board = {

@@ -27,3 +27,4 @@ local.json
 *.njsproj
 *.sln
 *.sw?
+*.map

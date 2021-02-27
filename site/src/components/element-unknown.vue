@@ -1,5 +1,5 @@
 <template>
-  <v-card>    
+  <v-card>
     <v-card-title
     >
       {{elementType}}
@@ -8,14 +8,14 @@
         :element="element"
         >
       </btn-edit-element>
-      <div>  
-        <!--    
-      <v-btn 
-        class="text-right" 
+      <div>
+        <!--
+      <v-btn
+        class="text-right"
         icon
         @click="editElement">
         <v-icon>mdi-pencil
-        </v-icon>  
+        </v-icon>
       </v-btn>
       -->
       </div>
@@ -37,7 +37,7 @@
       </v-btn>
     </v-card-actions>
     <v-expand-transition>
-      <div v-show="showProperties">        
+      <div v-show="showProperties">
         <v-card-text >
           <v-simple-table dense>
             <template v-slot:default>
@@ -53,7 +53,7 @@
               </thead>
               <tbody>
                 <tr
-                  v-for="(value, key) in element" :key="key"                
+                  v-for="(value, key) in element" :key="key"
                 >
                   <td>{{ key }}</td>
                   <td>{{ value }}</td>
@@ -73,21 +73,20 @@ import { pickBy} from 'lodash';
 import btnEditElement from './btn-edit-element.vue';
 
 // hide properties from the info bar
-const HIDDEN_PROPERTIES = 
+const HIDDEN_PROPERTIES =
   ['type'];
 
 export default {
   components: { btnEditElement },
   name: "element-unknown",
   data: function() {
-    return {       
+    return {
       showProperties: false,
-      element,
     }
   },
   props: {
-    id: {
-      type: String,
+    element: {
+      type: Object,
       required: true
     }
   },
@@ -101,7 +100,7 @@ export default {
       return this.element.type ? this.element.type : ' - type is missing -'
     },
     properties() {
-      let list = _.pickBy(this.element, (value, key) => { return !!HIDDEN_PROPERTIES[key]}) 
+      let list = _.pickBy(this.element, (value, key) => { return !!HIDDEN_PROPERTIES[key]})
       console.log('element.props', list)
       return list
     }
@@ -115,5 +114,5 @@ export default {
 </script>
 
 <style scoped>
- 
+
 </style>

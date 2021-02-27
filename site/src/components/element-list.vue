@@ -1,8 +1,9 @@
 <template>
   <div>
+    <v-btn @click="me">click me</v-btn>
     <component v-for="element in elements" :key="element.id"
       :is="componentType(element)"
-      :id="element.id"
+      :element="storeElement(element.id)"
     >
     </component>
   </div>
@@ -24,8 +25,7 @@ const COMPONENT_TYPE = {
 export default {
   name: "element-list",
   data: function() {
-    return {  
-      elementsData: []     
+    return {
     }
   },
   props: {
@@ -40,20 +40,28 @@ export default {
   //   }
   // },
   computed: {
-    
+
   },
-  methods: {   
-    
-    componentType(element) {  
-      
+  methods: {
+    me() {
+      let elm = this.$store.getters['board/element'](this.elements[2].id);
+      elm.title += 'x'
+      debug(elm, 'click me')
+    },
+    storeElement(id) {
+      let elm = this.$store.getters['board/element'](id);
+      debug(elm, 'element-list')
+      return elm;
+    },
+    componentType(element) {
       let elm = this.$store.getters['board/element'](element.id);
-      debug(elm, 'element.list')  
+      debug(elm, 'element.list')
       if (!elm.type) {
         return COMPONENT_TYPE.unknown
       } else {
         return COMPONENT_TYPE[elm.type]
       }
-    }    
+    }
   },
 }
 </script>
