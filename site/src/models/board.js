@@ -323,6 +323,19 @@ var Board = /** @class */ (function () {
             });
         });
     };
+    /**
+     * cancel the previous create
+     */
+    Board.prototype.elementCancel = function (id) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                logging_1.debug("remove " + id, 'board.elementCancel');
+                this._elements.delete(id);
+                this._clearCache();
+                return [2 /*return*/];
+            });
+        });
+    };
     Board.prototype.elementDelete = function (element) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {

@@ -243,6 +243,15 @@ class Board {
     }
   }
 
+  /**
+   * cancel the previous create
+   */
+  async elementCancel(id) {
+    debug(`remove ${id}`, 'board.elementCancel')
+    this._elements.delete(id);
+    this._clearCache();
+  }
+
   async elementDelete(element) {
     this._deleted.push(this.element(element.id));
     this._elements.delete(element.id);

@@ -20,9 +20,8 @@
       <v-card-actions>
         <v-spacer></v-spacer>
         <v-btn
-            color="blue darken-1"
             text
-            @click="dialog = false"
+            @click="doCancel"
         >
           Close
         </v-btn>
@@ -41,7 +40,8 @@
 <script>
 import {debug, warn, error} from "@/vendors/lib/logging";
 import VJsf from '@koumoul/vjsf/lib/VJsf.js'
-import '@koumoul/vjsf/lib/VJsf.css'
+import '@koumoul/vjsf/lib/VJsf.css';
+import {cloneDeep} from 'lodash';
 
 export default {
   name: "dialog-element",
@@ -51,6 +51,7 @@ export default {
       element: {},
       board: {},
       fields: [],
+      modelBackup: {}
     }
   },
   components: {
@@ -70,57 +71,54 @@ export default {
     },
     model:  {
       get: function() {
-        debug('get model', 'dialog-element.get')
+        // debug('get model', 'dialog-element.get')
         return this.element.model
       },
       set: function(model) {
-        debug(model, 'dialog-element.set')
-       // this.element.model = model
+        // does not need it. It directly modifies the element
+        // but it returns an error if no setter is available
       }
     }
   },
   watch: {
     dialog(visible) {
       if (visible) {
-        debug(`dialog state changed ${visible}`, 'element-dialog');
         let elementId = this.$store.getters['status/dialogId'];
         if (elementId) {
           this.board = this.$store.getters['board/active'];
           if (this.board) {
             this.element = this.board.element(elementId);
+            this.modelBackup = cloneDeep(this.element.model)
           //  this.loadElement();
           } else {
-            warn(`missing active board`)
+            warn(`missing active board`, 'dialog-element')
           }
         } else {
-          warn(`missing status/dialogId`)
+          warn(`missing status/dialogId`, 'dialog-element')
         }
-        return {}
       }
     }
   },
   methods: {
     async doSubmit() {
-      debug('submit', 'element-dialog')
-      // for (let index = 0; index < this.fields.length; index++) {
-      //   this.element[this.fields[index]] = this.model[this.fields[index]]
-      // }
       try {
         await this.board.save();
-        this.$store.dispatch('status/dialog' )
+        this.$store.dispatch('status/dialog' );
+        this.hideDialog();
       } catch (e) {
         error(e.message, 'element-dialog')
       }
     },
-    loadElement() {
-      // this.model = {};
-      // this.fields = [];
-      // for (let fieldname in this.schema.properties) {
-      //   if (!this.schema.properties.hasOwnProperty(fieldname)) { continue};
-      // //  this.model[fieldname] = this.element[fieldname]
-      //   this.fields.push(fieldname);
-      // }
+    async doCancel() {
+      // debug(this.modelBackup, 'dialog-element.cancel')
+      Object.assign(this.model, this.modelBackup);
+      await this.board.elementCancel(this.element.id)
+      this.hideDialog()
+    },
+    hideDialog() {
+      this.$store.dispatch('status/dialog', false)
     }
+
   }
 }
 </script>
