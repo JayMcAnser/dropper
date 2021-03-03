@@ -217,17 +217,6 @@ var Element = /** @class */ (function () {
             });
         });
     };
-    /**
-     * check if the element confirms the query
-     *
-     * @param query String
-     * @return boolean
-     */
-    Element.prototype.filter = function (query) {
-        logging_1.debug(query + ", " + this.element.title.toUpperCase(), 'element.filter');
-        return (this.element.title && this.element.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
-            (this.element.key && this.element.key.toUpperCase().indexOf(query.toUpperCase()) >= 0);
-    };
     // protected updateElementField(field, value?) {
     //    if (this.element[field] !== value) {
     //      debug(`set ${field} to ${value}`, 'element.udate')
@@ -275,9 +264,23 @@ var Element = /** @class */ (function () {
      * list their reference
      * @returns Array[ElementItem])
      */
-    Element.prototype.children = function (order) {
-        if (order === void 0) { order = undefined; }
-        if (!this._children) {
+    Element.prototype.isValidFilter = function (where) {
+        return where !== null && where.length > 0;
+    };
+    /**
+     * check if the element confirms the query
+     *
+     * @param query String
+     * @return boolean
+     */
+    Element.prototype.filter = function (elm, query) {
+        //  debug(`${query}, ${elm.title.toUpperCase()}`, 'element.filter')
+        return (elm.title && elm.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
+            (elm.key && elm.key.toUpperCase().indexOf(query.toUpperCase()) >= 0);
+    };
+    Element.prototype.children = function (where, order) {
+        if (where === void 0) { where = ''; }
+        if (!this._children || this.isValidFilter(where)) {
             this._children = [];
             // we have to load them
             if (this.element.elements) {
@@ -286,7 +289,7 @@ var Element = /** @class */ (function () {
                     if (!this.board.hasElement(elm.id)) {
                         logging_1.warn("element " + elm.id + " does not exist. record skipped", 'Element.children');
                     }
-                    else {
+                    else if (!this.isValidFilter(where) || this.filter(elm, where)) {
                         this._children.push(this.createElementLink(elm));
                     }
                 }

@@ -73,9 +73,10 @@ export default {
   },
   computed: {
     elements () {
-      let inv = this.board.inventory.children().map(e => e.item); // (this.filter); //[{id: 1, title:'one'},{id:2, title: 'two'}]; // this.board.inventory
-//      debug(inv, 'layout-inventory');
-      return inv
+      debug('check', 'layout-inventory');
+      return this.board.inventory.children(this.filter).map(e => e.item); // (this.filter); //[{id: 1, title:'one'},{id:2, title: 'two'}]; // this.board.inventory
+
+      // return inv
     },
   },
   methods: {

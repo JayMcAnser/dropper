@@ -180,18 +180,6 @@ class Element {
 
   }
 
-  /**
-   * check if the element confirms the query
-   *
-   * @param query String
-   * @return boolean
-   */
-  filter(query) {
-    debug(`${query}, ${this.element.title.toUpperCase()}`, 'element.filter')
-    return (this.element.title && this.element.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
-      (this.element.key && this.element.key.toUpperCase().indexOf(query.toUpperCase()) >= 0)
-  }
-
   // protected updateElementField(field, value?) {
   //    if (this.element[field] !== value) {
   //      debug(`set ${field} to ${value}`, 'element.udate')
@@ -240,15 +228,31 @@ class Element {
    * @returns Array[ElementItem])
    */
 
-   children(order = undefined): ElementItemArray {
-    if (!this._children) {
+
+  protected isValidFilter(where) {
+    return where !== null && where.length > 0
+  }
+  /**
+   * check if the element confirms the query
+   *
+   * @param query String
+   * @return boolean
+   */
+  filter(elm, query) {
+  //  debug(`${query}, ${elm.title.toUpperCase()}`, 'element.filter')
+    return (elm.title && elm.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
+      (elm.key && elm.key.toUpperCase().indexOf(query.toUpperCase()) >= 0)
+  }
+
+  children(where = '', order?): ElementItemArray {
+    if (!this._children || this.isValidFilter(where)) {
       this._children = [];
       // we have to load them
       if (this.element.elements) {
         for (let elm of this.element.elements) {
           if (!this.board.hasElement(elm.id)) {
             warn(`element ${elm.id} does not exist. record skipped`, 'Element.children')
-          } else {
+          } else if (!this.isValidFilter(where) || this.filter(elm, where)) {
             this._children.push(this.createElementLink(elm))
           }
         }

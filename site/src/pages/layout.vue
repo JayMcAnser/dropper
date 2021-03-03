@@ -45,9 +45,9 @@ export default {
   async mounted() {
     let boardId = this.$route.params.id;
     let layout = this.$route.params.layout;
-    if (this.$store.getters['board/active'].id !== boardId) {
-      await this.$store.dispatch('board/active', {id: boardId})
-    }
+    //if (this.$store.getters['board/active'].id !== boardId) {
+    await this.$store.dispatch('board/activate', {id: boardId})
+    //}
     this.board = this.$store.getters['board/active']
     this.layout = this.board.element(layout)
   }

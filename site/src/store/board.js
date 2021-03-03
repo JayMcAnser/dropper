@@ -13,7 +13,10 @@ export const mutations = {
 
   },
   initDb(state) {
-    state.database = new Database()
+    if (!Object.keys(state.database).length) {
+//      debug('connect database', 'store.board.initDb')
+      state.database = new Database()
+   }
   },
   activate(state, id) {
     state.board = state.database.boardById(id)
@@ -37,8 +40,11 @@ export const actions = {
     }
   },
 
-  async activate({state, dispatch, getters}, data) {
-    state.board = await state.database.boardById(data.id)
+  async activate({state, commit}, data) {
+    if (!Object.keys(state.board).length || state.board.id !== data.id) {
+      commit('initDb')
+      state.board = await state.database.boardById(data.id)
+    }
   }
 }
 

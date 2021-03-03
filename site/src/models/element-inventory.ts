@@ -29,11 +29,13 @@ class ElementInventory extends ElementLayout {
    *
    * @param order String \\ Function(a, b)
    */
-  children(order = undefined): ElementItemArray {
-    if (!this._children) {
+  children(where = '', order?): ElementItemArray {
+    if (!this._children || this.isValidFilter(where)) {
       this._children = [];
       this.board.elements.forEach((e) => {
-        this._children.push(this.createElementLink(e));
+        if (!this.isValidFilter(where) || this.filter(e, where)) {
+          this._children.push(this.createElementLink(e));
+        }
       })
       this.order = order;
       if (this._children.length && order) {

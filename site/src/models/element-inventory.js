@@ -52,13 +52,15 @@ var ElementInventory = /** @class */ (function (_super) {
      *
      * @param order String \\ Function(a, b)
      */
-    ElementInventory.prototype.children = function (order) {
+    ElementInventory.prototype.children = function (where, order) {
         var _this = this;
-        if (order === void 0) { order = undefined; }
-        if (!this._children) {
+        if (where === void 0) { where = ''; }
+        if (!this._children || this.isValidFilter(where)) {
             this._children = [];
             this.board.elements.forEach(function (e) {
-                _this._children.push(_this.createElementLink(e));
+                if (!_this.isValidFilter(where) || _this.filter(e, where)) {
+                    _this._children.push(_this.createElementLink(e));
+                }
             });
             this.order = order;
             if (this._children.length && order) {
