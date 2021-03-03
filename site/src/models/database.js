@@ -59,7 +59,6 @@ var Database = /** @class */ (function () {
                     case 1:
                         _a.trys.push([1, 3, , 4]);
                         this._boards = [];
-                        logging_1.debug("loading all", LOC);
                         return [4 /*yield*/, axios_1.default.get('/board/list')];
                     case 2:
                         res = _a.sent();
@@ -68,10 +67,10 @@ var Database = /** @class */ (function () {
                             for (_i = 0, boardList_1 = boardList; _i < boardList_1.length; _i++) {
                                 b = boardList_1[_i];
                                 boardClass = new board_1.default(b);
-                                logging_1.debug(boardClass, LOC + ".board");
+                                // debug(boardClass, `${LOC}.board`);
                                 this._boards.push(boardClass);
                             }
-                            logging_1.debug(this._boards, LOC + ".loaded");
+                            //     debug(this._boards, `${LOC}.loaded`)
                         }
                         else {
                             err = logging_1.newError(const_1.axiosActions.errors(res), LOC);
@@ -118,7 +117,6 @@ var Database = /** @class */ (function () {
                         if (!!data.isLoaded()) return [3 /*break*/, 2];
                         LOC = 'database.boardById';
                         url = "/board/" + data.id;
-                        logging_1.debug("loading board " + url, LOC);
                         return [4 /*yield*/, axios_1.default.get(url)];
                     case 1:
                         res = _a.sent();

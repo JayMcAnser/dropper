@@ -36,6 +36,11 @@ const routes = [
     component: () => import(/* webpackChunkName: "board" */ '../pages/board-edit.vue')
   },
   {
+    path: '/boardLayout/:id/:layout',
+    name: 'boardLayout',
+    component: () => import(/* webpackChunkName: "board" */ '../pages/layout.vue')
+  },
+  {
     path: '/board/:id?',  // if no id, the active is used
     name: 'board',
     component: () => import(/* webpackChunkName: "board" */ '../pages/board.vue')
@@ -49,9 +54,9 @@ const routes = [
 
 const router = new VueRouter({
   mode: 'history',
-  base: process.env.BASE_URL,  
+  base: process.env.BASE_URL,
   routes:  routeMerge(
-    AuthRoutes, 
+    AuthRoutes,
     routes              // should be last because it overload the previous ones
   )
 })

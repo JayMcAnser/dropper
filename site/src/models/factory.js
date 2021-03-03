@@ -5,20 +5,25 @@ var element_1 = require("./element");
 var element_column_1 = require("./element-column");
 var element_text_1 = require("./element-text");
 var logging_1 = require("../vendors/lib/logging");
+var element_inventory_1 = require("./element-inventory");
 exports.ElementType = {
     board: 'board',
     column: 'column',
-    text: 'text'
+    text: 'text',
+    inventory: 'inventory'
 };
 var Factory = function (board, element, options) {
+    if (element === void 0) { element = undefined; }
     if (options === void 0) { options = {}; }
     switch (element.type) {
         case exports.ElementType.text:
             return new element_text_1.default(board, element, options);
         case exports.ElementType.column:
             return new element_column_1.default(board, element, options);
+        case exports.ElementType.inventory:
+            return new element_inventory_1.default(board, element, options);
         default:
-            logging_1.debug("unknown element type: " + element.type);
+            logging_1.warn("unknown element type: " + element.type);
             return new element_1.default(board, element, options);
     }
 };

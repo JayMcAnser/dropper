@@ -44,7 +44,7 @@ const UpdateSchema = Joi.object({
 })
 
 const ElementInsertSchema = Joi.object({
-  id: Joi.string().allow(null, ''),
+  id: Joi.string().optional().allow(null, ''),
   key: Joi.string().max(50),
   type: Joi.string().required(),
   title: Joi.string().min(3).max(100),

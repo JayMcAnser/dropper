@@ -1,114 +1,87 @@
 <template>
   <div class="page">
-    <board-bar
-      :columns="columns"
-    ></board-bar>  
-    <h2>Board {{ board.title}}</h2>
-    <column-view
-      :column="column"
-    ></column-view>
+    <board-bar></board-bar>
+    <board-layouts
+      :board="board">
+    </board-layouts>
+
     <error-dialog
       @retry="onRetry"
       @cancel="onCancel"
     ></error-dialog>
-    <element-dialog>
-    </element-dialog>
+    <dialog-element>
+    </dialog-element>
   </div>
 </template>
 
 <script>
 
 import BoardBar from '../components/board-bar.vue'
-import ElementDialog from '../components/element-dialog.vue'
+import DialogElement from '../components/dialog-element.vue'
 import ColumnView from '../components/column-view.vue'
 import ErrorDialog from '../vendors/components/error-dialog.vue'
 import {debug, error} from '../vendors/lib/logging'
+import LayoutInventory from "@/components/layout-inventory";
+import BoardLayouts from "@/components/board-layouts";
 
- 
+
 export default {
   name: 'Board',
   data: function() {
-    return {    
-      columnDialog: false,
-      isLoaded: false,
+    return {
+      columnDialog: false
     }
   },
   params: {
     id: String
   },
   components: {
+    LayoutInventory,
+    BoardLayouts,
     BoardBar,
-    ColumnView,    
+    ColumnView,
     ErrorDialog,
-    ElementDialog
+    DialogElement
   },
   computed: {
     board() {
-      if (this.isLoaded) {
-        let board = this.$store.getters['board/active'];
-        // debug(`loading board ${JSON.stringify(board)}`) 
-        return this.$store.getters['board/active'];
-      } else {
-        return {}
-      }
-      
+      return this.$store.getters['board/active']
     },
-    columns() {
-      if (this.isLoaded) {
-        // let columns = this.$store.getters['board/columns'];
-        //debug(`loading columns ${JSON.stringify(columns)}`) 
-        return this.$store.getters['board/columns'];
-      } else {
-        return []
-      }
-    },
-    column() {
-      if (this.isLoaded) {
-        let column = this.$store.getters['board/column'];
-        debug(`column: ${JSON.stringify(column)}`)
-        return column
-      } else {
-        return {}
-      }
-    }  
+    // columns() {
+    //   if (this.isLoaded) {
+    //     // let columns = this.$store.getters['board/columns'];
+    //     //debug(`loading columns ${JSON.stringify(columns)}`)
+    //     return this.$store.getters['board/columns'];
+    //   } else {
+    //     return []
+    //   }
+    // },
+    // column() {
+    //   if (this.isLoaded) {
+    //     let column = this.$store.getters['board/column'];
+    //     debug(`column: ${JSON.stringify(column)}`)
+    //     return column
+    //   } else {
+    //     return {}
+    //   }
+    // }
 
   },
   methods: {
     async onRetry() {
       debug(`retry error`)
       await this.reload()
-    },  
+    },
     async onCancel() {
       debug(`cancel error`)
       this.$router.go(-1)
     },
-    async reload() {
-      // debug(`activate board`)
-      if (this.$route.params.id) {      
-        await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 
-        this.isLoaded = true;
-      } else {
-        debug('open active board', 'page.board')
-      }
-    }
-
   },
 
-  async updated() {
-    await this.reload();
-  },
-  async mounted() {
-    try {
-      debug('route changed', 'board.mounted')
-      await this.reload();      
-    } catch(e) {
-      error(e, 'page.board')
-    }    
-  }
 }
 </script>
 <style scoped>
   .page {
-    margin-top: 62px  
+    margin-top: 62px
   }
 </style>

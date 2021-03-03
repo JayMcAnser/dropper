@@ -7,9 +7,10 @@ import { axiosActions } from '../vendors/lib/const';
 
 import Axios from '../vendors/lib/axios';
 import { debug, newError } from '../vendors/lib/logging'
-import Element from "./element";
+import Element, {ElementItemArray} from "./element";
 import Factory, {ElementType} from './factory';
-import {ElementStored} from "./element";
+import {ElementStored, ElementArray, ElementMap} from "./element";
+import ElementInventory from "./element-inventory";
 
 /**
  * the fysical definition of a board returned by the API
@@ -24,8 +25,6 @@ interface BoardStore {
   elements?: Array<ElementStored>,
 }
 
-export interface ElementMap extends Map<string, Element> {}
-export interface ElementArray extends Array<Element> {}
 
 class Board {
   readonly board: BoardStore;
@@ -34,6 +33,7 @@ class Board {
   private _deleted: ElementArray = [];
   private _isDirty: boolean = false;
   private _changes: Object = {};
+  private _inventory: ElementInventory;
 
   constructor(board: BoardStore) {
     this.board = board;
@@ -56,20 +56,43 @@ class Board {
     this._loaded = true;
   }
 
-  /**
-   * returns the elements that are dirty
-   * @protected
-   * @returns Array<Element>
-   */
-  protected get dirtyElements() {
-    let result = []
-    this._elements.forEach((e) => {
-      if (e.isDirty || e.isNew) {
-        result.push(e)
-      }
-    })
-    return result
+  protected _clearCache() {
+    if (this._inventory) {
+      this._inventory.reload();
+    }
   }
+
+  filter(elements: ElementItemArray, query) {
+    if (query && elements && elements.length) {
+      return elements.filter( (e) => {
+        return e.item.filter(query)
+      })
+    } else {
+      return elements
+    }
+  }
+
+  get inventory() : Element { // ElementArray {
+    if (!this._inventory) {
+      this._inventory = new ElementInventory(this);
+    }
+    return this._inventory;
+    // if (filter && filter.length) {
+    //   return this.filter(this._inventory.children(), filter).map(e => e.item)
+    // } else {
+    //   return this._inventory.children().map(e => e.item)
+    // }
+  }
+
+  layouts(options): ElementArray {
+    if (!this._inventory) {
+      this._inventory = new ElementInventory(this);
+    }
+    let result = [this._inventory];
+    this._elements.forEach((e) => e.type === 'layout')
+    return result;
+  }
+
 
   get isDirty() {
     return this._isDirty || this.dirtyElements.length > 0 || this._deleted.length > 0;
@@ -116,7 +139,12 @@ class Board {
     return this._elements;
   }
   element(id) : Element {
-    return this._elements.get(id)
+    switch(id) {
+      case 'inventory':
+        return this.inventory
+      default:
+        return this._elements.get(id)
+    }
   }
 
   get elementCount() {
@@ -125,7 +153,7 @@ class Board {
   /**
    * list the columns of this board
    */
-  get columns() : ElementArray { //Array<Element> {
+  get columns() : ElementArray {
     let cols = [];
     this._elements.forEach((elm, key, map) => {
       if (elm.type === ElementType.column) {
@@ -140,6 +168,21 @@ class Board {
   }
   hasElement(id) {
     return this._elements.has(id)
+  }
+
+  /**
+   * returns the elements that are dirty
+   * @protected
+   * @returns Array<Element>
+   */
+  protected get dirtyElements() {
+    let result = []
+    this._elements.forEach((e) => {
+      if (e.isDirty || e.isNew) {
+        result.push(e)
+      }
+    })
+    return result
   }
 
   async save() {
@@ -181,6 +224,8 @@ class Board {
       // commit the transaction
       this._isDirty = false;
     }
+    this._clearCache();
+    debug(this._inventory, 'board.ts')
     return this;
   }
 
@@ -189,8 +234,9 @@ class Board {
     if (axiosActions.isOk(result)) {
       Object.assign(data, axiosActions.data(result));
       let elementClass = Factory(this, data,{isNew: true});
-      Object.assign(elementClass.changedData, data);
+//      elementClass.updateData(data);
       this._elements.set(data.id, elementClass);
+      this._clearCache();
       return elementClass;
     } else {
       throw newError(axiosActions.errors(result), 'board.elementCreate');
@@ -203,6 +249,7 @@ class Board {
     this._elements.forEach((e) => {
       e.deleteRef(element)
     });
+    this._clearCache();
   }
 
 }

@@ -1,9 +1,8 @@
 <template>
   <div>
-    <v-btn @click="me">click me</v-btn>
     <component v-for="element in elements" :key="element.id"
       :is="componentType(element)"
-      :element="storeElement(element.id)"
+      :element="element"
     >
     </component>
   </div>
@@ -14,7 +13,7 @@ import ElementUnknown from './element-unknown'
 import ElementText from './element-text';
 import ElementImage from './element-image';
 import ElementCanvas from './element-canvas';
-import {debug} from '../vendors/lib/logging';
+import {debug} from '@/vendors/lib/logging';
 
 const COMPONENT_TYPE = {
   unknown: ElementUnknown,
@@ -34,32 +33,14 @@ export default {
       require: true
     }
   },
-  // watch: {
-  //   elements: async function() {
-  //     this.elementsData = await this.$store.dispatch('board/elements', this.elements)
-  //   }
-  // },
-  computed: {
 
-  },
   methods: {
-    me() {
-      let elm = this.$store.getters['board/element'](this.elements[2].id);
-      elm.title += 'x'
-      debug(elm, 'click me')
-    },
-    storeElement(id) {
-      let elm = this.$store.getters['board/element'](id);
-      debug(elm, 'element-list')
-      return elm;
-    },
     componentType(element) {
-      let elm = this.$store.getters['board/element'](element.id);
-      debug(elm, 'element.list')
-      if (!elm.type) {
+      if (!COMPONENT_TYPE[element.type]) {
+        //debug(`unknown element ${element.type}`, 'element-list')
         return COMPONENT_TYPE.unknown
       } else {
-        return COMPONENT_TYPE[elm.type]
+        return COMPONENT_TYPE[element.type]
       }
     }
   },

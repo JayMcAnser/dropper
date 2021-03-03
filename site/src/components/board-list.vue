@@ -3,7 +3,7 @@
     <h2>Board List</h2>
   <v-list two-line>
     <v-list-item v-for="board in boards" :key="board.id">
-      <v-list-item-content 
+      <v-list-item-content
       @click="openBoard(board.id)"
       >
         <v-list-item-title class="title">{{ board.title}}</v-list-item-title>
@@ -46,18 +46,19 @@ export default {
     publicText(isPublic) {
       return isPublic ? 'public' : 'private'
     },
-    openBoard(id) {
+    async openBoard(id) {
       let url = `board/${id}`;
       // debug(`open board ${id}`)
+      await this.$store.dispatch('board/activate', {id})
       this.$router.push( {name: 'board', params: {id}} )
     },
     editBoard(id) {
       debug(`edit board ${id}`)
-      this.$router.push( {name: 'boardEdit', params: {id}})  
+      this.$router.push( {name: 'boardEdit', params: {id}})
     },
     async refresh() {
       try {
-        this.boards = await this.$store.dispatch('board/list');        
+        this.boards = await this.$store.dispatch('board/list');
       } catch (e) {
         this.boards = []
       }

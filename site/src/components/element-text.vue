@@ -2,21 +2,13 @@
   <v-card
     elevation="0">
     <v-card-title>
-      id: {{element.id}}
       {{element.title}}
       <v-spacer></v-spacer>
       <btn-edit-element
         :element="element"
         >
       </btn-edit-element>
-      <v-btn
-        @click="add"
-      >add</v-btn>
-      <v-btn
-          @click="b"
-      >bbb</v-btn>
     </v-card-title>
-    <v-card-text>OOO{{title}} -- {{text}}</v-card-text>
     <v-card-text v-if="element.description">{{element.description}}</v-card-text>
   </v-card>
 </template>
@@ -75,8 +67,8 @@ export default {
       // but this does:
       // this.$store.getters['board/element'](rec.id).title = rec.title
       await this.$store.dispatch('element/save', rec)
-      debug(this.element, 'element-text')
-      debug(this.$store.getters['board/element'](this.element.id), 'direct')
+      // debug(this.element, 'element-text')
+      // debug(this.$store.getters['board/element'](this.element.id), 'direct')
 
     }
   },

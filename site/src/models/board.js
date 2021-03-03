@@ -42,6 +42,7 @@ var const_1 = require("../vendors/lib/const");
 var axios_1 = require("../vendors/lib/axios");
 var logging_1 = require("../vendors/lib/logging");
 var factory_1 = require("./factory");
+var element_inventory_1 = require("./element-inventory");
 var Board = /** @class */ (function () {
     function Board(board) {
         this._loaded = false;
@@ -66,24 +67,44 @@ var Board = /** @class */ (function () {
         }
         this._loaded = true;
     };
-    Object.defineProperty(Board.prototype, "dirtyElements", {
-        /**
-         * returns the elements that are dirty
-         * @protected
-         * @returns Array<Element>
-         */
-        get: function () {
-            var result = [];
-            this._elements.forEach(function (e) {
-                if (e.isDirty || e.isNew) {
-                    result.push(e);
-                }
+    Board.prototype._clearCache = function () {
+        if (this._inventory) {
+            this._inventory.reload();
+        }
+    };
+    Board.prototype.filter = function (elements, query) {
+        if (query && elements && elements.length) {
+            return elements.filter(function (e) {
+                return e.item.filter(query);
             });
-            return result;
+        }
+        else {
+            return elements;
+        }
+    };
+    Object.defineProperty(Board.prototype, "inventory", {
+        get: function () {
+            if (!this._inventory) {
+                this._inventory = new element_inventory_1.default(this);
+            }
+            return this._inventory;
+            // if (filter && filter.length) {
+            //   return this.filter(this._inventory.children(), filter).map(e => e.item)
+            // } else {
+            //   return this._inventory.children().map(e => e.item)
+            // }
         },
         enumerable: false,
         configurable: true
     });
+    Board.prototype.layouts = function (options) {
+        if (!this._inventory) {
+            this._inventory = new element_inventory_1.default(this);
+        }
+        var result = [this._inventory];
+        this._elements.forEach(function (e) { return e.type === 'layout'; });
+        return result;
+    };
     Object.defineProperty(Board.prototype, "isDirty", {
         get: function () {
             return this._isDirty || this.dirtyElements.length > 0 || this._deleted.length > 0;
@@ -146,7 +167,12 @@ var Board = /** @class */ (function () {
         configurable: true
     });
     Board.prototype.element = function (id) {
-        return this._elements.get(id);
+        switch (id) {
+            case 'inventory':
+                return this.inventory;
+            default:
+                return this._elements.get(id);
+        }
     };
     Object.defineProperty(Board.prototype, "elementCount", {
         get: function () {
@@ -177,6 +203,24 @@ var Board = /** @class */ (function () {
     Board.prototype.hasElement = function (id) {
         return this._elements.has(id);
     };
+    Object.defineProperty(Board.prototype, "dirtyElements", {
+        /**
+         * returns the elements that are dirty
+         * @protected
+         * @returns Array<Element>
+         */
+        get: function () {
+            var result = [];
+            this._elements.forEach(function (e) {
+                if (e.isDirty || e.isNew) {
+                    result.push(e);
+                }
+            });
+            return result;
+        },
+        enumerable: false,
+        configurable: true
+    });
     Board.prototype.save = function () {
         return __awaiter(this, void 0, void 0, function () {
             var dirtyOnes, index, elmData, result, index, result, result;
@@ -247,7 +291,10 @@ var Board = /** @class */ (function () {
                         // commit the transaction
                         this._isDirty = false;
                         _a.label = 14;
-                    case 14: return [2 /*return*/, this];
+                    case 14:
+                        this._clearCache();
+                        logging_1.debug(this._inventory, 'board.ts');
+                        return [2 /*return*/, this];
                 }
             });
         });
@@ -263,8 +310,9 @@ var Board = /** @class */ (function () {
                         if (const_1.axiosActions.isOk(result)) {
                             Object.assign(data, const_1.axiosActions.data(result));
                             elementClass = factory_1.default(this, data, { isNew: true });
-                            Object.assign(elementClass.changedData, data);
+                            //      elementClass.updateData(data);
                             this._elements.set(data.id, elementClass);
+                            this._clearCache();
                             return [2 /*return*/, elementClass];
                         }
                         else {
@@ -283,6 +331,7 @@ var Board = /** @class */ (function () {
                 this._elements.forEach(function (e) {
                     e.deleteRef(element);
                 });
+                this._clearCache();
                 return [2 /*return*/];
             });
         });

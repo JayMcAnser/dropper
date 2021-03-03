@@ -59,25 +59,65 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var logging_1 = require("../vendors/lib/logging");
+// const NO_UPDATE_PROPERTIES = ['id'];
 var Element = /** @class */ (function () {
     /**
      * t
      * @param board
      * @param element Object the raw object return from the API
+     * @param options Object {
+     *   isNew boolean not yet stored on disk
+     * }
      */
     function Element(board, element, options) {
+        if (element === void 0) { element = undefined; }
+        if (options === void 0) { options = undefined; }
         this._isDirty = false;
         // the class definition
         this._children = undefined;
-        this.updatableFields = ['key', 'title', 'description'];
-        this.changedData = {};
+        //  protected updatableFields = ['key','title','description'];
+        this._changedData = {};
+        // properties that should not be updated/removed by the model interface for editing
+        this.no_update_properties = ['id', 'type'];
         this._isNew = false;
         if (!board) {
             throw new logging_1.LocationError('missing board', 'Element.constructor');
         }
+        var vm = this;
+        var elementHandler = {
+            deleteProperty: function (target, prop) {
+                if (!vm.no_update_properties.includes(prop)) {
+                    //          debug(`cancel remove property`, 'element.handler')
+                    delete target[prop];
+                }
+                return true;
+            },
+            set: function (target, prop, value, receiver) {
+                if (vm.no_update_properties.includes(prop)) {
+                    return true;
+                }
+                vm._changedData[prop] = value;
+                vm._isDirty = true;
+                return Reflect.set(target, prop, value, receiver);
+            }
+        };
         this.board = board;
-        this.element = element;
+        if (!element) {
+            logging_1.warn("element is missing the initialisation object", 'element.constructor');
+            this.element = new Proxy({}, elementHandler);
+        }
+        else {
+            if (!element.id) {
+                logging_1.warn("element is missing the id", 'element.constructor');
+            }
+            this.element = new Proxy(element, elementHandler);
+        }
         this._isNew = !!(options && options.isNew);
+        if (this.isNew) {
+            // we need the id and the type to create the element on the server
+            vm._changedData['id'] = element.id;
+            vm._changedData['type'] = element.type;
+        }
     }
     Object.defineProperty(Element.prototype, "type", {
         get: function () {
@@ -97,18 +137,32 @@ var Element = /** @class */ (function () {
         get: function () {
             return this.element.key;
         },
-        set: function (v) {
-            this.updateElementField('key', v);
-        },
         enumerable: false,
         configurable: true
     });
     Object.defineProperty(Element.prototype, "title", {
+        // set key(v) {
+        //   this.updateElementField('key', v)
+        // }
         get: function () {
             return this.element.title;
         },
-        set: function (v) {
-            this.updateElementField('title', v);
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "isNew", {
+        // set title(v) {
+        //   this.updateElementField('title', v)
+        // }
+        get: function () {
+            return this._isNew;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "visibleFields", {
+        get: function () {
+            return Object.assign({}, this.element);
         },
         enumerable: false,
         configurable: true
@@ -120,9 +174,34 @@ var Element = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
-    Object.defineProperty(Element.prototype, "isNew", {
+    Object.defineProperty(Element.prototype, "changedData", {
         get: function () {
-            return this._isNew;
+            // if changed through the model we don't know what field did change, so send everything
+            return this._changedData;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "model", {
+        get: function () {
+            return this.element;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Element.prototype, "schema", {
+        //
+        // set model(value) {
+        //   this.updateElementField(value)
+        // }
+        get: function () {
+            return {
+                type: 'object',
+                properties: {
+                    key: { type: 'string' },
+                    title: { type: 'string' },
+                }
+            };
         },
         enumerable: false,
         configurable: true
@@ -138,14 +217,34 @@ var Element = /** @class */ (function () {
             });
         });
     };
-    Element.prototype.updateElementField = function (field, value) {
-        if (this.element[field] !== value) {
-            this.element[field] = value;
-            this.changedData[field] = value;
-            this._isDirty = true;
-        }
+    /**
+     * check if the element confirms the query
+     *
+     * @param query String
+     * @return boolean
+     */
+    Element.prototype.filter = function (query) {
+        logging_1.debug(query + ", " + this.element.title.toUpperCase(), 'element.filter');
+        return (this.element.title && this.element.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
+            (this.element.key && this.element.key.toUpperCase().indexOf(query.toUpperCase()) >= 0);
     };
+    // protected updateElementField(field, value?) {
+    //    if (this.element[field] !== value) {
+    //      debug(`set ${field} to ${value}`, 'element.udate')
+    //      this.element[field] = value
+    //      this.changedData[field] = value;
+    //      this._isDirty = true;
+    //    }
+    //    return true;
+    // }
+    // updateData(data) {
+    //   for (let fieldname in data) {
+    //     if (!data.hasOwnProperty(fieldname)) { continue }
+    //     this.updateElementField(fieldname, data[fieldname])
+    //   }
+    // }
     Element.prototype.dirtyClear = function () {
+        this._changedData = {};
         this._isDirty = false;
         this._isNew = false;
     };
@@ -176,9 +275,8 @@ var Element = /** @class */ (function () {
      * list their reference
      * @returns Array[ElementItem])
      */
-    // get elementLinks() {
     Element.prototype.children = function (order) {
-        if (order === void 0) { order = false; }
+        if (order === void 0) { order = undefined; }
         if (!this._children) {
             this._children = [];
             // we have to load them
@@ -205,7 +303,8 @@ var Element = /** @class */ (function () {
         for (var index = 0; index < children.length; index++) {
             elmLinks.push(children[index].link);
         }
-        this.updateElementField('elements', elmLinks);
+        this.element['elements'] = elmLinks;
+        // this.updateElementField('elements', elmLinks);
     };
     /**
      * add a new element ot this on
@@ -234,6 +333,43 @@ var Element = /** @class */ (function () {
         if (index >= 0) {
             children.splice(index, 1);
             this._storeChildren();
+        }
+    };
+    /**
+     * moves the child record to a specific location
+     * @param element
+     * @param index 0 == first, -1 last otherwise: position
+     */
+    Element.prototype.childMove = function (element, index) {
+        var children = this.children();
+        var elementIndex = children.findIndex(function (e) { return e.link.id === element.id; });
+        if (elementIndex >= 0) {
+            if (index < 0 || index >= children.length) {
+                index = children.length - 1;
+            }
+            if (elementIndex !== index) {
+                children.splice(elementIndex, 1);
+                children.splice(index, 0, element);
+            }
+        }
+        else {
+            logging_1.warn("the element " + element.id + " is not part of " + this.id);
+        }
+    };
+    /**
+     * Move an element one up or down
+     * @param element
+     * @param up true => for to 0 false move to end
+     */
+    Element.prototype.childMoveStep = function (element, up) {
+        if (up === void 0) { up = true; }
+        var children = this.children();
+        var elementIndex = children.findIndex(function (e) { return e.link.id === element.id; });
+        if (elementIndex) {
+            this.childMove(element, elementIndex + (up ? 1 : -1));
+        }
+        else {
+            logging_1.warn("the element " + element.id + " is not part of " + this.id);
         }
     };
     return Element;

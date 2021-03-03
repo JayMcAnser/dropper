@@ -25,16 +25,16 @@ export default class Database {
       const LOC = 'database.load';
       try {
         this._boards = [];
-        debug(`loading all`, LOC)
+        // debug(`loading all`, LOC)
         let res = await Axios.get('/board/list');
         if (axiosActions.isOk(res)) {
           let boardList = axiosActions.data(res);
           for (let b of boardList) {
             let boardClass = new Board(b);
-            debug(boardClass, `${LOC}.board`);
+            // debug(boardClass, `${LOC}.board`);
             this._boards.push(boardClass);
           }
-          debug(this._boards, `${LOC}.loaded`)
+     //     debug(this._boards, `${LOC}.loaded`)
         } else {
           let err = newError(axiosActions.errors(res), LOC)
           error(err, LOC);
@@ -63,7 +63,7 @@ export default class Database {
     if (!data.isLoaded()) {
       const LOC = 'database.boardById';
       let url = `/board/${data.id}`
-      debug(`loading board ${url}`, LOC)
+ //     debug(`loading board ${url}`, LOC)
       let res = await Axios.get(url);
       if (axiosActions.isOk(res)) {
 
