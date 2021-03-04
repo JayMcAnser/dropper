@@ -43,6 +43,12 @@ const UpdateSchema = Joi.object({
   isPublic: Joi.bool().default(false)
 })
 
+const ElementLink = Joi.object({
+  id: Joi.string(),
+  // extend this for other basic link versions
+})
+
+
 const ElementInsertSchema = Joi.object({
   id: Joi.string().optional().allow(null, ''),
   key: Joi.string().max(50),
@@ -50,7 +56,7 @@ const ElementInsertSchema = Joi.object({
   title: Joi.string().min(3).max(100),
 
   description: Joi.string().allow(null, ''),
-  elements: Joi.array().items(Joi.string())
+  elements: Joi.array().items(ElementLink)
 })
 
 const ElementUpdateSchema = Joi.object({
@@ -59,9 +65,7 @@ const ElementUpdateSchema = Joi.object({
   type: Joi.string(),
   title: Joi.string().min(3).max(100),
   description: Joi.string().allow(null, ''),
-  elements: Joi.array().items(Joi.object( {
-    id: Joi.string(),
-  }))
+  elements: Joi.array().items(ElementLink),
 })
 
 const _isGroupType = (elm) => {

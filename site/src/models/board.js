@@ -72,17 +72,17 @@ var Board = /** @class */ (function () {
             this._inventory.reload();
         }
     };
-    Board.prototype.filter = function (elements, query) {
-        if (query && elements && elements.length) {
-            return elements.filter(function (e) {
-                return e.item.filter(query);
-            });
-        }
-        else {
-            return elements;
-        }
-    };
     Object.defineProperty(Board.prototype, "inventory", {
+        //
+        // filter(elements: ElementItemArray, query) {
+        //   if (query && elements && elements.length) {
+        //     return elements.filter( (e) => {
+        //       return e.item.filter(query)
+        //     })
+        //   } else {
+        //     return elements
+        //   }
+        // }
         get: function () {
             if (!this._inventory) {
                 this._inventory = new element_inventory_1.default(this);

@@ -17,7 +17,7 @@ var __extends = (this && this.__extends) || (function () {
 })();
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_layout_1 = require("./element-layout");
-var logging_1 = require("../vendors/lib/logging");
+var element_filters_1 = require("./element-filters");
 var ElementInventory = /** @class */ (function (_super) {
     __extends(ElementInventory, _super);
     function ElementInventory(board, element, options) {
@@ -52,33 +52,22 @@ var ElementInventory = /** @class */ (function (_super) {
      *
      * @param order String \\ Function(a, b)
      */
-    ElementInventory.prototype.children = function (where, order) {
+    ElementInventory.prototype.children = function (qry, order) {
         var _this = this;
-        if (where === void 0) { where = ''; }
-        if (!this._children || this.isValidFilter(where)) {
-            this._children = [];
-            this.board.elements.forEach(function (e) {
-                if (!_this.isValidFilter(where) || _this.filter(e, where)) {
-                    _this._children.push(_this.createElementLink(e));
-                }
-            });
-            this.order = order;
-            if (this._children.length && order) {
-                this.orderArray(this._children, this.order);
+        if (!qry) {
+            qry = new element_filters_1.FilterElement();
+        }
+        this._children = [];
+        this.board.elements.forEach(function (element) {
+            if (qry.compare(element)) {
+                _this._children.push(_this.createElementItem(element));
             }
+        });
+        this.order = order;
+        if (this._children.length && order) {
+            this.orderArray(this._children, this.order);
         }
         return this._children;
-    };
-    ElementInventory.prototype.reload = function () {
-        var _this = this;
-        logging_1.debug("reloading inventory", 'element-inventory');
-        if (this._children) {
-            this._children.splice(0, this._children.length);
-            this.board.elements.forEach(function (e) {
-                _this._children.splice(_this._children.length, 0, _this.createElementLink(e));
-                // this._children.push(this.createElementLink(e));
-            });
-        }
     };
     return ElementInventory;
 }(element_layout_1.default));

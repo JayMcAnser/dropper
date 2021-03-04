@@ -58,6 +58,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+var element_filters_1 = require("./element-filters");
 var logging_1 = require("../vendors/lib/logging");
 // const NO_UPDATE_PROPERTIES = ['id'];
 var Element = /** @class */ (function () {
@@ -254,7 +255,7 @@ var Element = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
-    Element.prototype.createElementLink = function (elementLink) {
+    Element.prototype.createElementItem = function (elementLink) {
         return {
             link: elementLink,
             item: this.board.elements.get(elementLink.id)
@@ -265,22 +266,29 @@ var Element = /** @class */ (function () {
      * @returns Array[ElementItem])
      */
     Element.prototype.isValidFilter = function (where) {
-        return where !== null && where.length > 0;
+        // return (typeof where === 'object') ||
+        //        (typeof where === 'string' && where.length > 0)
     };
     /**
-     * check if the element confirms the query
-     *
-     * @param query String
-     * @return boolean
+     * check if qry is part of elm (case insensitive)
+     * @param text String
+     * @param caseSensitive boolean
+     * @returns boolean true if it contains the text
      */
-    Element.prototype.filter = function (elm, query) {
-        //  debug(`${query}, ${elm.title.toUpperCase()}`, 'element.filter')
-        return (elm.title && elm.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
-            (elm.key && elm.key.toUpperCase().indexOf(query.toUpperCase()) >= 0);
+    Element.prototype.filterContains = function (text, caseSensitive) {
+        if (caseSensitive === void 0) { caseSensitive = false; }
+        if (caseSensitive) {
+            return this.title.indexOf(text) >= 0 ||
+                this.key.indexOf(text) >= 0;
+        }
+        return this.title.toLowerCase().indexOf(text) >= 0 ||
+            this.key.toLowerCase().indexOf(text) >= 0;
     };
-    Element.prototype.children = function (where, order) {
-        if (where === void 0) { where = ''; }
-        if (!this._children || this.isValidFilter(where)) {
+    Element.prototype.children = function (qry, order) {
+        if (!qry) {
+            qry = new element_filters_1.FilterElement();
+        }
+        if (!this._children) {
             this._children = [];
             // we have to load them
             if (this.element.elements) {
@@ -289,8 +297,11 @@ var Element = /** @class */ (function () {
                     if (!this.board.hasElement(elm.id)) {
                         logging_1.warn("element " + elm.id + " does not exist. record skipped", 'Element.children');
                     }
-                    else if (!this.isValidFilter(where) || this.filter(elm, where)) {
-                        this._children.push(this.createElementLink(elm));
+                    else {
+                        var link = this.createElementItem(elm);
+                        if (qry.compare(link.item)) {
+                            this._children.push(link);
+                        }
                     }
                 }
             }
@@ -321,7 +332,7 @@ var Element = /** @class */ (function () {
         // load the children if they are not there yet
         var children = this.children();
         Object.assign(linkInfo, { id: element.id });
-        var elmLink = this.createElementLink(linkInfo);
+        var elmLink = this.createElementItem(linkInfo);
         if (Number.isInteger(position) && position >= 0 && position < children.length) {
             children.splice(position, 0, elmLink);
         }

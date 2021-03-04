@@ -6,6 +6,7 @@ import ElementLayout from "./element-layout";
 import {debug} from '../vendors/lib/logging';
 import Board from "./board";
 import {ElementItemArray, ElementStored} from "./element";
+import {FilterElement} from "./element-filters";
 
 class ElementInventory extends ElementLayout {
   private order? : string;
@@ -29,32 +30,33 @@ class ElementInventory extends ElementLayout {
    *
    * @param order String \\ Function(a, b)
    */
-  children(where = '', order?): ElementItemArray {
-    if (!this._children || this.isValidFilter(where)) {
-      this._children = [];
-      this.board.elements.forEach((e) => {
-        if (!this.isValidFilter(where) || this.filter(e, where)) {
-          this._children.push(this.createElementLink(e));
-        }
-      })
-      this.order = order;
-      if (this._children.length && order) {
-        this.orderArray(this._children, this.order)
+  children(qry?: FilterElement, order?): ElementItemArray {
+    if (!qry) {
+      qry = new FilterElement();
+    }
+    this._children = [];
+    this.board.elements.forEach((element) => {
+      if (qry.compare(element)) {
+        this._children.push(this.createElementItem(element));
       }
+    })
+    this.order = order;
+    if (this._children.length && order) {
+      this.orderArray(this._children, this.order)
     }
     return this._children;
   }
 
-  reload() {
-    debug(`reloading inventory`, 'element-inventory')
-    if (this._children) {
-      this._children.splice(0, this._children.length)
-      this.board.elements.forEach((e) => {
-        this._children.splice(this._children.length, 0, this.createElementLink(e))
-        // this._children.push(this.createElementLink(e));
-      })
-    }
-  }
+  // reload() {
+  //   debug(`reloading inventory`, 'element-inventory')
+  //   if (this._children) {
+  //     this._children.splice(0, this._children.length)
+  //     this.board.elements.forEach((e) => {
+  //       this._children.splice(this._children.length, 0, this.createElementLink(e))
+  //       // this._children.push(this.createElementLink(e));
+  //     })
+  //   }
+  // }
 
 }
 

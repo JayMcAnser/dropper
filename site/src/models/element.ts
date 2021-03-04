@@ -23,8 +23,10 @@
 
 
 import Board from "./board";
+import {FilterElement} from './element-filters';
+
 import {debug, warn, error, LocationError, newError} from '../vendors/lib/logging';
-import {cloneDeep} from 'lodash';
+// import {cloneDeep} from 'lodash';
  /**
  * the element linked from the API
  */
@@ -217,7 +219,7 @@ class Element {
     return this.children().map((c) => c.item);
   }
 
-  protected createElementLink(elementLink: ElementLink) : ElementItem{
+  protected createElementItem(elementLink: ElementLink) : ElementItem {
     return {
       link: elementLink,
       item: this.board.elements.get(elementLink.id)
@@ -230,30 +232,42 @@ class Element {
 
 
   protected isValidFilter(where) {
-    return where !== null && where.length > 0
-  }
-  /**
-   * check if the element confirms the query
-   *
-   * @param query String
-   * @return boolean
-   */
-  filter(elm, query) {
-  //  debug(`${query}, ${elm.title.toUpperCase()}`, 'element.filter')
-    return (elm.title && elm.title.toUpperCase().indexOf(query.toUpperCase()) >= 0) ||
-      (elm.key && elm.key.toUpperCase().indexOf(query.toUpperCase()) >= 0)
+    // return (typeof where === 'object') ||
+    //        (typeof where === 'string' && where.length > 0)
   }
 
-  children(where = '', order?): ElementItemArray {
-    if (!this._children || this.isValidFilter(where)) {
+  /**
+   * check if qry is part of elm (case insensitive)
+   * @param text String
+   * @param caseSensitive boolean
+   * @returns boolean true if it contains the text
+   */
+  filterContains(text: string, caseSensitive: boolean = false) {
+    if (caseSensitive) {
+      return  this.title.indexOf(text) >= 0 ||
+        this.key.indexOf(text) >= 0;
+    }
+    return  this.title.toLowerCase().indexOf(text) >= 0 ||
+            this.key.toLowerCase().indexOf(text) >= 0;
+
+  }
+
+  children(qry?: FilterElement, order?): ElementItemArray {
+    if (!qry) {
+      qry = new FilterElement();
+    }
+    if (!this._children) {
       this._children = [];
       // we have to load them
       if (this.element.elements) {
         for (let elm of this.element.elements) {
           if (!this.board.hasElement(elm.id)) {
             warn(`element ${elm.id} does not exist. record skipped`, 'Element.children')
-          } else if (!this.isValidFilter(where) || this.filter(elm, where)) {
-            this._children.push(this.createElementLink(elm))
+          } else {
+            let link : ElementItem =  this.createElementItem(elm);
+            if (qry.compare(link.item)) {
+              this._children.push(link)
+            }
           }
         }
       }
@@ -284,7 +298,7 @@ class Element {
     // load the children if they are not there yet
     let children = this.children();
     Object.assign(linkInfo, {id: element.id})
-    let elmLink = this.createElementLink(linkInfo)
+    let elmLink = this.createElementItem(linkInfo)
     if (Number.isInteger(position) &&position >= 0 && position < children.length) {
       children.splice(position, 0, elmLink);
     } else {

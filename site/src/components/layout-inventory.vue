@@ -50,7 +50,7 @@ import {debug} from "@/vendors/lib/logging";
 import ElementList from "@/components/element-list";
 import DialogElement from "@/components/dialog-element";
 import DialogElementNew from "@/components/dialog-element-new"
-
+import {FilterWordSearch} from '../models/element-filters';
 
 export default {
   name: "layout-inventory",
@@ -73,10 +73,9 @@ export default {
   },
   computed: {
     elements () {
-      debug('check', 'layout-inventory');
-      return this.board.inventory.children(this.filter).map(e => e.item); // (this.filter); //[{id: 1, title:'one'},{id:2, title: 'two'}]; // this.board.inventory
-
-      // return inv
+      let filter = new FilterWordSearch(this.filter);
+      debug(filter, 'layout-inventory');
+      return this.board.inventory.children(filter).map(e => e.item);
     },
   },
   methods: {
@@ -84,9 +83,6 @@ export default {
       this.$store.dispatch('status/rightDrawer', true)
     }
   },
-  // mounted() {
-  //   this.elements = this.board.inventory(this.filter);
-  // }
 
 }
 </script>

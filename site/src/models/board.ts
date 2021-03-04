@@ -61,16 +61,16 @@ class Board {
       this._inventory.reload();
     }
   }
-
-  filter(elements: ElementItemArray, query) {
-    if (query && elements && elements.length) {
-      return elements.filter( (e) => {
-        return e.item.filter(query)
-      })
-    } else {
-      return elements
-    }
-  }
+  //
+  // filter(elements: ElementItemArray, query) {
+  //   if (query && elements && elements.length) {
+  //     return elements.filter( (e) => {
+  //       return e.item.filter(query)
+  //     })
+  //   } else {
+  //     return elements
+  //   }
+  // }
 
   get inventory() : Element { // ElementArray {
     if (!this._inventory) {
