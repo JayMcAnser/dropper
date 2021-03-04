@@ -89,7 +89,6 @@ export default {
           if (this.board) {
             this.element = this.board.element(elementId);
             this.modelBackup = cloneDeep(this.element.model)
-          //  this.loadElement();
           } else {
             warn(`missing active board`, 'dialog-element')
           }
@@ -110,11 +109,11 @@ export default {
       }
     },
     async doCancel() {
-      // debug(this.modelBackup, 'dialog-element.cancel')
       Object.assign(this.model, this.modelBackup);
-      await this.board.elementCancel(this.element.id)
+      await this.board.elementCancel(this.element)
       this.hideDialog()
     },
+
     hideDialog() {
       this.$store.dispatch('status/dialog', false)
     }

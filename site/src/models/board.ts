@@ -29,7 +29,7 @@ interface BoardStore {
 class Board {
   readonly board: BoardStore;
   private _loaded: boolean = false;
-  private _elements: Map<string, Element>;
+  private _elements: ElementMap;
   private _deleted: ElementArray = [];
   private _isDirty: boolean = false;
   private _changes: Object = {};
@@ -57,20 +57,9 @@ class Board {
   }
 
   protected _clearCache() {
-    if (this._inventory) {
-      this._inventory.reload();
-    }
+
   }
-  //
-  // filter(elements: ElementItemArray, query) {
-  //   if (query && elements && elements.length) {
-  //     return elements.filter( (e) => {
-  //       return e.item.filter(query)
-  //     })
-  //   } else {
-  //     return elements
-  //   }
-  // }
+
 
   get inventory() : Element { // ElementArray {
     if (!this._inventory) {
@@ -88,8 +77,12 @@ class Board {
     if (!this._inventory) {
       this._inventory = new ElementInventory(this);
     }
-    let result = [this._inventory];
-    this._elements.forEach((e) => e.type === 'layout')
+    let result : ElementArray = [this._inventory];
+    this.elements.forEach((e) => {
+      if (e.type === 'layout') {
+        result.push(e)
+      }
+    })
     return result;
   }
 
@@ -246,9 +239,13 @@ class Board {
   /**
    * cancel the previous create
    */
-  async elementCancel(id) {
-    debug(`remove ${id}`, 'board.elementCancel')
-    this._elements.delete(id);
+  async elementCancel(element: Element) {
+    if (element.isNew) {
+      debug(`remove ${element.id}`, 'board.elementCancel')
+      this._elements.delete(element.id);
+    } else {
+      this.element(element.id).restore();
+    }
     this._clearCache();
   }
 

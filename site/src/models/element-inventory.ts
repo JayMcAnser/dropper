@@ -46,18 +46,6 @@ class ElementInventory extends ElementLayout {
     }
     return this._children;
   }
-
-  // reload() {
-  //   debug(`reloading inventory`, 'element-inventory')
-  //   if (this._children) {
-  //     this._children.splice(0, this._children.length)
-  //     this.board.elements.forEach((e) => {
-  //       this._children.splice(this._children.length, 0, this.createElementLink(e))
-  //       // this._children.push(this.createElementLink(e));
-  //     })
-  //   }
-  // }
-
 }
 
 export default ElementInventory

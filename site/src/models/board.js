@@ -68,21 +68,8 @@ var Board = /** @class */ (function () {
         this._loaded = true;
     };
     Board.prototype._clearCache = function () {
-        if (this._inventory) {
-            this._inventory.reload();
-        }
     };
     Object.defineProperty(Board.prototype, "inventory", {
-        //
-        // filter(elements: ElementItemArray, query) {
-        //   if (query && elements && elements.length) {
-        //     return elements.filter( (e) => {
-        //       return e.item.filter(query)
-        //     })
-        //   } else {
-        //     return elements
-        //   }
-        // }
         get: function () {
             if (!this._inventory) {
                 this._inventory = new element_inventory_1.default(this);
@@ -102,7 +89,11 @@ var Board = /** @class */ (function () {
             this._inventory = new element_inventory_1.default(this);
         }
         var result = [this._inventory];
-        this._elements.forEach(function (e) { return e.type === 'layout'; });
+        this.elements.forEach(function (e) {
+            if (e.type === 'layout') {
+                result.push(e);
+            }
+        });
         return result;
     };
     Object.defineProperty(Board.prototype, "isDirty", {
@@ -326,11 +317,16 @@ var Board = /** @class */ (function () {
     /**
      * cancel the previous create
      */
-    Board.prototype.elementCancel = function (id) {
+    Board.prototype.elementCancel = function (element) {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
-                logging_1.debug("remove " + id, 'board.elementCancel');
-                this._elements.delete(id);
+                if (element.isNew) {
+                    logging_1.debug("remove " + element.id, 'board.elementCancel');
+                    this._elements.delete(element.id);
+                }
+                else {
+                    this.element(element.id).restore();
+                }
                 this._clearCache();
                 return [2 /*return*/];
             });

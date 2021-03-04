@@ -66,6 +66,8 @@ class Element {
 
 //  protected updatableFields = ['key','title','description'];
   private _changedData = {};
+  // the data that was original there before the change to _changeData
+  private _orgData = {};
   // properties that should not be updated/removed by the model interface for editing
   protected no_update_properties = ['id', 'type']
   protected _isNew : boolean = false;
@@ -97,6 +99,9 @@ class Element {
         }
         vm._changedData[prop] = value;
         vm._isDirty = true;
+        if (!vm._orgData[prop]) {
+          vm._orgData[prop] = element[prop]
+        }
         return Reflect.set(target, prop, value, receiver)
       }
     }
@@ -182,24 +187,21 @@ class Element {
 
   }
 
-  // protected updateElementField(field, value?) {
-  //    if (this.element[field] !== value) {
-  //      debug(`set ${field} to ${value}`, 'element.udate')
-  //      this.element[field] = value
-  //      this.changedData[field] = value;
-  //      this._isDirty = true;
-  //    }
-  //    return true;
-  // }
-  // updateData(data) {
-  //   for (let fieldname in data) {
-  //     if (!data.hasOwnProperty(fieldname)) { continue }
-  //     this.updateElementField(fieldname, data[fieldname])
-  //   }
-  // }
+  /**
+   * restore the possible changes to the element
+   */
+  restore() {
+    debug(this._orgData, 'element.restore')
+    for (let fieldname in this._orgData) {
+      if (!this._orgData.hasOwnProperty(fieldname)) { continue }
+      this.element[fieldname] = this._orgData[fieldname]
+    }
+    this._orgData = {}
+  };
 
   dirtyClear() {
     this._changedData = {};
+    this._orgData = {}
     this._isDirty = false;
     this._isNew = false;
   }
