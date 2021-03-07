@@ -3,6 +3,7 @@
     <component v-for="element in elements" :key="element.id"
       :is="componentType(element)"
       :element="element"
+      @activate="elementClicked(element)"
     >
     </component>
   </div>
@@ -42,7 +43,11 @@ export default {
       } else {
         return COMPONENT_TYPE[element.type]
       }
+    },
+    elementClicked(element) {
+      this.$emit('activate', element)
     }
+
   },
 }
 </script>

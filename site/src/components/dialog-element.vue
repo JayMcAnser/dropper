@@ -48,7 +48,7 @@ export default {
   data: function() {
     return {
       valid: false,
-      element: {},
+      element: false,
       board: {},
       fields: [],
       modelBackup: {}
@@ -67,7 +67,10 @@ export default {
       }
     },
     schema() {
-      return this.element.schema
+      if (this.element) {
+        return this.element.editSchema()
+      }
+      return {}
     },
     model:  {
       get: function() {

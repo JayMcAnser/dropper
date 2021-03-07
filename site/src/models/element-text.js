@@ -19,6 +19,18 @@ var ElementText = /** @class */ (function (_super) {
     function ElementText(board, element, options) {
         return _super.call(this, board, element, options) || this;
     }
+    Object.defineProperty(ElementText.prototype, "description", {
+        get: function () {
+            return this.element.description;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    ElementText.prototype.editSchema = function () {
+        var textSchema = _super.prototype.editSchema.call(this);
+        textSchema.properties['description'] = { type: 'string', 'x-display': 'textarea', 'x-props': { autoGrow: true }, 'x-class': 'no-padding' };
+        return textSchema;
+    };
     return ElementText;
 }(element_1.default));
 exports.default = ElementText;

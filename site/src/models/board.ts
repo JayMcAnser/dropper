@@ -222,6 +222,17 @@ class Board {
     return this;
   }
 
+  async cancel() {
+    // if Typescript error: "downlevelIteration": true in the tsconfig.json/compilerOptions
+    for (const [key, elm] of this._elements) {
+      if (elm.isDirty) {
+        await this.elementCancel(elm);
+      }
+    }
+    this._changes = {};
+    this._isDirty = false;
+  }
+
   async elementCreate(data) {
     let result = await Axios.post(`board/${this.id}/elementId`, data);
     if (axiosActions.isOk(result)) {

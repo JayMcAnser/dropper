@@ -57,6 +57,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var element_filters_1 = require("./element-filters");
 var logging_1 = require("../vendors/lib/logging");
@@ -195,23 +206,20 @@ var Element = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
-    Object.defineProperty(Element.prototype, "schema", {
-        //
-        // set model(value) {
-        //   this.updateElementField(value)
-        // }
-        get: function () {
-            return {
-                type: 'object',
-                properties: {
-                    key: { type: 'string' },
-                    title: { type: 'string' },
-                }
-            };
-        },
-        enumerable: false,
-        configurable: true
-    });
+    //
+    // set model(value) {
+    //   this.updateElementField(value)
+    // }
+    Element.prototype.editSchema = function () {
+        return {
+            type: 'object',
+            properties: {
+                key: { type: 'string', 'x-cols': 6 },
+                type: { type: 'string', 'x-cols': 6, readOnly: true },
+                title: { type: 'string' },
+            }
+        };
+    };
     /**
      * remove the link this id
      * @param id
@@ -290,6 +298,7 @@ var Element = /** @class */ (function () {
             this.key.toLowerCase().indexOf(text) >= 0;
     };
     Element.prototype.children = function (qry, order) {
+        var e_1, _a;
         if (!qry) {
             qry = new element_filters_1.FilterElement();
         }
@@ -297,17 +306,26 @@ var Element = /** @class */ (function () {
             this._children = [];
             // we have to load them
             if (this.element.elements) {
-                for (var _i = 0, _a = this.element.elements; _i < _a.length; _i++) {
-                    var elm = _a[_i];
-                    if (!this.board.hasElement(elm.id)) {
-                        logging_1.warn("element " + elm.id + " does not exist. record skipped", 'Element.children');
-                    }
-                    else {
-                        var link = this.createElementItem(elm);
-                        if (qry.compare(link.item)) {
-                            this._children.push(link);
+                try {
+                    for (var _b = __values(this.element.elements), _c = _b.next(); !_c.done; _c = _b.next()) {
+                        var elm = _c.value;
+                        if (!this.board.hasElement(elm.id)) {
+                            logging_1.warn("element " + elm.id + " does not exist. record skipped", 'Element.children');
+                        }
+                        else {
+                            var link = this.createElementItem(elm);
+                            if (qry.compare(link.item)) {
+                                this._children.push(link);
+                            }
                         }
                     }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                    }
+                    finally { if (e_1) throw e_1.error; }
                 }
             }
         }

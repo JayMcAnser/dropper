@@ -35,6 +35,33 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = require("../vendors/lib/const");
 // import Axios, { setHeaders } from '../vendors/lib/axios';
@@ -286,6 +313,46 @@ var Board = /** @class */ (function () {
                         this._clearCache();
                         logging_1.debug(this._inventory, 'board.ts');
                         return [2 /*return*/, this];
+                }
+            });
+        });
+    };
+    Board.prototype.cancel = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, _b, _c, key, elm, e_1_1;
+            var e_1, _d;
+            return __generator(this, function (_e) {
+                switch (_e.label) {
+                    case 0:
+                        _e.trys.push([0, 5, 6, 7]);
+                        _a = __values(this._elements), _b = _a.next();
+                        _e.label = 1;
+                    case 1:
+                        if (!!_b.done) return [3 /*break*/, 4];
+                        _c = __read(_b.value, 2), key = _c[0], elm = _c[1];
+                        if (!elm.isDirty) return [3 /*break*/, 3];
+                        return [4 /*yield*/, this.elementCancel(elm)];
+                    case 2:
+                        _e.sent();
+                        _e.label = 3;
+                    case 3:
+                        _b = _a.next();
+                        return [3 /*break*/, 1];
+                    case 4: return [3 /*break*/, 7];
+                    case 5:
+                        e_1_1 = _e.sent();
+                        e_1 = { error: e_1_1 };
+                        return [3 /*break*/, 7];
+                    case 6:
+                        try {
+                            if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                        }
+                        finally { if (e_1) throw e_1.error; }
+                        return [7 /*endfinally*/];
+                    case 7:
+                        this._changes = {};
+                        this._isDirty = false;
+                        return [2 /*return*/];
                 }
             });
         });

@@ -40,6 +40,17 @@ export const actions = {
     }
   },
 
+  async save({state}) {
+    if (state.board) {
+      await state.board.save();
+    }
+  },
+  async cancel({state}) {
+    if (state.board) {
+      await state.board.cancel();
+    }
+  },
+
   async activate({state, commit}, data) {
     if (!Object.keys(state.board).length || state.board.id !== data.id) {
       commit('initDb')

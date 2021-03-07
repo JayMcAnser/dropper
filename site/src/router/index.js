@@ -46,6 +46,12 @@ const routes = [
     component: () => import(/* webpackChunkName: "board" */ '../pages/board.vue')
   },
   {
+    path: '/element/:boardId/:elementId',  // if no id, the active is used
+    name: 'elementView',
+    component: () => import(/* webpackChunkName: "element" */ '../pages/element-view.vue')
+  },
+
+  {
     path: '/login',
     name: 'login',
     component: () => import(/* webpackChunkName: "auth" */ '../pages/login.vue')

@@ -34,6 +34,7 @@
       <v-list>
         <element-list
             :elements="elements"
+            @activate="activateElement"
         >
         </element-list>
       </v-list>
@@ -81,6 +82,10 @@ export default {
   methods: {
     showRightPanel() {
       this.$store.dispatch('status/rightDrawer', true)
+    },
+    activateElement(element) {
+      debug(element.id, 'layout-inventory.activate');
+      this.$router.push({name: 'elementView', params: {boardId: this.board.id, elementId: element.id}})
     }
   },
 

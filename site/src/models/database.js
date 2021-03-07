@@ -38,6 +38,17 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function(o) {
+    var s = typeof Symbol === "function" && Symbol.iterator, m = s && o[s], i = 0;
+    if (m) return m.call(o);
+    if (o && typeof o.length === "number") return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+    throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var board_1 = require("./board");
 var logging_1 = require("../vendors/lib/logging");
@@ -49,26 +60,36 @@ var Database = /** @class */ (function () {
     }
     Database.prototype.load = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var LOC, res, boardList, _i, boardList_1, b, boardClass, err, e_1;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var LOC, res, boardList, boardList_1, boardList_1_1, b, boardClass, err, e_1;
+            var e_2, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (!!this.boardsLoaded) return [3 /*break*/, 4];
                         LOC = 'database.load';
-                        _a.label = 1;
+                        _b.label = 1;
                     case 1:
-                        _a.trys.push([1, 3, , 4]);
+                        _b.trys.push([1, 3, , 4]);
                         this._boards = [];
                         return [4 /*yield*/, axios_1.default.get('/board/list')];
                     case 2:
-                        res = _a.sent();
+                        res = _b.sent();
                         if (const_1.axiosActions.isOk(res)) {
                             boardList = const_1.axiosActions.data(res);
-                            for (_i = 0, boardList_1 = boardList; _i < boardList_1.length; _i++) {
-                                b = boardList_1[_i];
-                                boardClass = new board_1.default(b);
-                                // debug(boardClass, `${LOC}.board`);
-                                this._boards.push(boardClass);
+                            try {
+                                for (boardList_1 = __values(boardList), boardList_1_1 = boardList_1.next(); !boardList_1_1.done; boardList_1_1 = boardList_1.next()) {
+                                    b = boardList_1_1.value;
+                                    boardClass = new board_1.default(b);
+                                    // debug(boardClass, `${LOC}.board`);
+                                    this._boards.push(boardClass);
+                                }
+                            }
+                            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                            finally {
+                                try {
+                                    if (boardList_1_1 && !boardList_1_1.done && (_a = boardList_1.return)) _a.call(boardList_1);
+                                }
+                                finally { if (e_2) throw e_2.error; }
                             }
                             //     debug(this._boards, `${LOC}.loaded`)
                         }
@@ -80,7 +101,7 @@ var Database = /** @class */ (function () {
                         this.boardsLoaded = true;
                         return [3 /*break*/, 4];
                     case 3:
-                        e_1 = _a.sent();
+                        e_1 = _b.sent();
                         logging_1.error(e_1, LOC);
                         throw e_1;
                     case 4: return [2 /*return*/, true];
@@ -202,7 +223,7 @@ var Database = /** @class */ (function () {
     };
     Database.prototype.boardCreate = function (boardObj) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, board, boardClass, e_2;
+            var result, board, boardClass, e_3;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -221,9 +242,9 @@ var Database = /** @class */ (function () {
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        e_2 = _a.sent();
-                        logging_1.error(e_2, 'database.boardCreate');
-                        throw logging_1.newError(e_2, 'database.boardDelete');
+                        e_3 = _a.sent();
+                        logging_1.error(e_3, 'database.boardCreate');
+                        throw logging_1.newError(e_3, 'database.boardDelete');
                     case 3: return [2 /*return*/];
                 }
             });
@@ -252,17 +273,18 @@ var Database = /** @class */ (function () {
      */
     Database.prototype.boardDelete = function (query) {
         return __awaiter(this, void 0, void 0, function () {
-            var records, _loop_1, this_1, _i, records_1, rec;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            var records, _loop_1, this_1, records_1, records_1_1, rec, e_4_1;
+            var e_4, _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (typeof query === 'string') {
                             query = { id: query };
                         }
                         return [4 /*yield*/, this.find(query)];
                     case 1:
-                        records = _a.sent();
-                        if (!records.length) return [3 /*break*/, 6];
+                        records = _b.sent();
+                        if (!records.length) return [3 /*break*/, 10];
                         _loop_1 = function (rec) {
                             var result, index;
                             return __generator(this, function (_a) {
@@ -285,20 +307,34 @@ var Database = /** @class */ (function () {
                             });
                         };
                         this_1 = this;
-                        _i = 0, records_1 = records;
-                        _a.label = 2;
+                        _b.label = 2;
                     case 2:
-                        if (!(_i < records_1.length)) return [3 /*break*/, 5];
-                        rec = records_1[_i];
-                        return [5 /*yield**/, _loop_1(rec)];
+                        _b.trys.push([2, 7, 8, 9]);
+                        records_1 = __values(records), records_1_1 = records_1.next();
+                        _b.label = 3;
                     case 3:
-                        _a.sent();
-                        _a.label = 4;
+                        if (!!records_1_1.done) return [3 /*break*/, 6];
+                        rec = records_1_1.value;
+                        return [5 /*yield**/, _loop_1(rec)];
                     case 4:
-                        _i++;
-                        return [3 /*break*/, 2];
-                    case 5: return [2 /*return*/, true];
-                    case 6: return [2 /*return*/, false];
+                        _b.sent();
+                        _b.label = 5;
+                    case 5:
+                        records_1_1 = records_1.next();
+                        return [3 /*break*/, 3];
+                    case 6: return [3 /*break*/, 9];
+                    case 7:
+                        e_4_1 = _b.sent();
+                        e_4 = { error: e_4_1 };
+                        return [3 /*break*/, 9];
+                    case 8:
+                        try {
+                            if (records_1_1 && !records_1_1.done && (_a = records_1.return)) _a.call(records_1);
+                        }
+                        finally { if (e_4) throw e_4.error; }
+                        return [7 /*endfinally*/];
+                    case 9: return [2 /*return*/, true];
+                    case 10: return [2 /*return*/, false];
                 }
             });
         });

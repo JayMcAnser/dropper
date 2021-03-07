@@ -170,11 +170,12 @@ class Element {
   //   this.updateElementField(value)
   // }
 
-  get schema() {
+  public editSchema() {
     return {
       type: 'object',
       properties: {
-        key: { type: 'string' },
+        key: { type: 'string', 'x-cols': 6 },
+        type: { type: 'string', 'x-cols': 6, readOnly: true },
         title: {type: 'string'},
       }
     }
