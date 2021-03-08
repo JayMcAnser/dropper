@@ -40,14 +40,25 @@ export const actions = {
     }
   },
 
-  async save({state}) {
+  async save({state, dispatch}) {
     if (state.board) {
-      await state.board.save();
+      await dispatch('status/clear', undefined, {root: true})
+      try {
+        await state.board.save();
+      } catch (e) {
+        await dispatch('status/error', e, {root: true});
+        throw e
+      }
     }
   },
   async cancel({state}) {
     if (state.board) {
-      await state.board.cancel();
+      await dispatch('status/clear', undefined, {root: true});
+      try {
+        await state.board.cancel();
+      } catch (e) {
+        await dispatch('status/error', e, {root: true});
+      }
     }
   },
 

@@ -97,12 +97,17 @@ class Element {
         if (vm.no_update_properties.includes(prop)) {
           return true;
         }
-        vm._changedData[prop] = value;
-        vm._isDirty = true;
-        if (!vm._orgData[prop]) {
-          vm._orgData[prop] = element[prop]
+        if (target[prop] !== value) {
+        //  debug(value, 'element.change')
+          vm._changedData[prop] = value;
+          vm._isDirty = true;
+          if (!vm._orgData[prop]) {
+            vm._orgData[prop] = element[prop]
+          }
+          return Reflect.set(target, prop, value, receiver)
+        } else {
+          return true;
         }
-        return Reflect.set(target, prop, value, receiver)
       }
     }
     this.board = board;

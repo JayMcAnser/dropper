@@ -1,26 +1,26 @@
 <template>
   <div class="page">
-    <div>
+    <div
+        id="factory">
       <element-factory
+
           :element="element">
       </element-factory>
-
-      <v-bottom-sheet
-          v-model="bottomSheet"
-      >
-        <v-sheet
-            class="text-center"
-            height="150px"
-        >
-          <v-btn
-            icon
-            @click="viewNav('board')"
-          >
-            <v-icon>mdi-billboard</v-icon>
-          </v-btn>
-        </v-sheet>
-      </v-bottom-sheet>
     </div>
+    <!--
+    <v-bottom-sheet
+        attach="factory"
+        v-model="bottomSheet"
+    >
+      WHAT IS THIS
+      <v-btn
+          icon
+          @click="viewNav('board')"
+      >
+        <v-icon>mdi-billboard</v-icon>
+      </v-btn>
+    </v-bottom-sheet>
+    -->
     <bottom-bar
         @modeChange="switchMode"
         >
@@ -85,7 +85,8 @@ export default {
     },
     async onRetry() {
       debug(`retry error`)
-      await this.reload()
+      await this.$store.dispatch('status/clear')
+      // await this.reload()
     },
     async onCancel() {
       debug(`cancel error`)
