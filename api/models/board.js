@@ -10,9 +10,11 @@ const Config = require('config');
 const Fs = require('fs');
 const Path = require('path');
 const Helper = require('../vendors/lib/helper');
-const { v4 : uuidv4} = require('uuid');
+// const { v4 : uuidv4} = require('uuid');
+const {generate: uuidv4} = require('short-uuid');
 const JsonFile = require('jsonfile');
 const Const = require('../vendors/lib/const')
+const Messages = require('../lib/const');
 const Logging = require('../vendors/lib/logging');
 const Joi = require('joi');
 const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
@@ -56,7 +58,11 @@ const ElementInsertSchema = Joi.object({
   title: Joi.string().min(3).max(100),
 
   description: Joi.string().allow(null, ''),
-  elements: Joi.array().items(ElementLink)
+  elements: Joi.array().items(ElementLink),
+
+  // media files:
+  // the id of the directory in the mime directory
+  mediaId: Joi.string().optional()
 })
 
 const ElementUpdateSchema = Joi.object({
@@ -377,13 +383,13 @@ module.exports = {
   /**
    *
    * @param session
-   * @param boardName
+   * @param id
    * @returns {Promise<boolean>} True did succeed. false could not find recod
    */
 
-  async delete(session, boardName) {
+  async delete(session, id) {
     this._validateSession(session);
-    let board = await this.findOne(session, {id: boardName});
+    let board = await this.findOne(session, {id: id});
     if (board) {
       this._validateRights(session, board, DELETE)
       const Rimraf = require('rimraf');
@@ -392,7 +398,15 @@ module.exports = {
     } else {
       return false;
     }
+  },
 
+  async deleteByName(session, name) {
+    this._validateSession(session);
+    let board = await this.findOne(session, {name: name});
+    if (board) {
+      return this.delete(session, board.id)
+    }
+    return false;
   },
 
   _getImageRec(image) {
@@ -667,7 +681,65 @@ module.exports = {
     return this.save(session, board.id, board, ['history', 'elements']).then( () => {
       return board
     });
+  },
 
+  async elementUpload(session, board, element, storedFile) {
+    Logging.log('debug', `[element.upload] stored file: ${JSON.stringify(storedFile)}`);
+    element.mediaId = uuidv4();
+    let newElement = await this.elementAdd(session, board, element);
+    // so now we have to move the file into position
+    let indexFilename = Helper.getFullPath('index.json', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    let meta = {
+      filename: storedFile.originalname,
+      size: storedFile.size,
+      mimeType: storedFile.mimetype
+    };
+    JsonFile.writeFileSync(indexFilename, meta);
+
+    let datFilename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    Fs.renameSync(storedFile.path, datFilename);
+    return element;
+  },
+
+  /**
+   *
+   * @param session
+   * @param board
+   * @param elementId
+   * @param index the index into the multi files
+   */
+  getStream(session, board, elementId, index) {
+    this._validateSession(session);
+    if (index) {
+      Logging.warn(`[board.getStream] multi file elements are not yet supported ${index}`)
+    }
+    let element = board.elements[elementId];
+    if (!element) {
+      throw new Error(Messages.errors.elementNotFound)
+    }
+    let datFilename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    if (!Fs.existsSync(datFilename)) {
+      throw new Error(`file does not exist`)
+    }
+    return Fs.createReadStream(datFilename);
+  },
+
+  getStreamInfo(session, board, elementId, index, type) {
+    this._validateSession(session);
+    if (index) {
+      Logging.warn(`[board.getStream] multi file elements are not yet supported ${index}`)
+    }
+    let element = board.elements[elementId];
+    if (!element) {
+      throw new Error(Messages.errors.elementNotFound)
+    }
+    let indexFilename = Helper.getFullPath('index.json', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`});
+    let indexFile = JsonFile.readFileSync(indexFilename);
+    if (type) {
+      if (indexFile.mimeType.substr(0, type.length) !== type) {
+        throw new Error(`mimetype error. (expection ${type}, got ${indexFile.mimeType})`)
+      }
+    }
+    return indexFile
   }
-
 }

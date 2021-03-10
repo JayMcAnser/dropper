@@ -98,7 +98,7 @@ class Element {
           return true;
         }
         if (target[prop] !== value) {
-        //  debug(value, 'element.change')
+          debug(value, 'element.change')
           vm._changedData[prop] = value;
           vm._isDirty = true;
           if (!vm._orgData[prop]) {

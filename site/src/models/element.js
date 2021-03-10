@@ -111,7 +111,7 @@ var Element = /** @class */ (function () {
                     return true;
                 }
                 if (target[prop] !== value) {
-                    //  debug(value, 'element.change')
+                    logging_1.debug(value, 'element.change');
                     vm._changedData[prop] = value;
                     vm._isDirty = true;
                     if (!vm._orgData[prop]) {

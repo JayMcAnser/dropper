@@ -24,10 +24,10 @@ describe('controller.board', () => {
 
     before( async() => {
       token = await Init.AuthToken;
-      let session = {userId: await Init.AuthUserId};
+      let session = {user: await Init.AuthUser};
       // must use ROOT_USER because we logged in as a new user
-      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD)
-      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD_PUBLIC)
+      await Board.deleteByName(session, TEST_BOARD)
+      await Board.deleteByName(session, TEST_BOARD_PUBLIC)
     })
 
     it('create', () => {

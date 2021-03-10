@@ -51,10 +51,12 @@ export default {
   created() {
     this.viewLayouts = new Map();
     this.viewLayouts.set('text',   () => import(/* webpackChunkName: "view-text" */ '@/components/view-text'))
+    this.viewLayouts.set('image',   () => import(/* webpackChunkName: "view-text" */ '@/components/view-image'))
     this.viewLayouts.set('unknown', () => import(/* webpackChunkName: "view-text" */ '@/components/view-unknown'))
 
     this.editLayouts = new Map();
     this.editLayouts.set('text',  () => import(/* webpackChunkName: "edit-text" */ '@/components/edit-text'));
+    this.editLayouts.set('image', () => import(/* webpackChunkName: "edit-text" */ '@/components/edit-image'));
     this.editLayouts.set('unknown', () => import(/* webpackChunkName: "view-text" */ '@/components/view-unknown'))
   }
 }

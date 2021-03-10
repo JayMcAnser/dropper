@@ -8,7 +8,9 @@ export interface ElementTextStored extends ElementStored {
 }
 
 class ElementText extends Element {
-  constructor(board: Board, element: ElementTextStored, options) {
+  public element: ElementTextStored;
+
+  constructor(board: Board, element: ElementStored, options) {
     super(board, element, options);
 
   }

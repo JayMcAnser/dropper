@@ -3,6 +3,20 @@ const Const = require('../vendors/lib/const');
 const ApiReturn = require('../vendors/lib/api-return');
 const AuthController = require('../vendors/controllers/auth')
 const validateUUID = require('uuid').validate;
+const Helper = require('../vendors/lib/helper');
+const Multer = require('multer')
+const Path = require('path');
+const Message = require('../lib/const');
+
+const Storage = Multer.diskStorage({
+  destination: function (req, file, cb) {
+    cb(null, Helper.getFullPath('', {rootKey: 'Path.tempDataRoot', makePath: true}))
+  },
+  filename: function(req, file, cb) {
+    //cb(null, file.originalname);
+    cb(null, file.fieldname + '-' + Date.now() + Path.extname(file.originalname));
+  }
+})
 
 const _getSession = function(req) {
   if (req.session) {
@@ -164,7 +178,31 @@ module.exports = {
     } catch (e) {
       ApiReturn.error(req, res, e, LOC)
     }
+  },
+
+  // ---------------------------------------------
+  elementUpload: async function(req, res) {
+    let LOC = 'board.controller.elementUpload';
+    try {
+      let id = req.params.id;
+      let board = await boardModel.openById(_getSession(req), id);
+      // image is the name of the element
+      let upload = Multer({storage: Storage}).single('image')
+      upload(req, res, async function(err) {
+        if (req.fileValidationError) {
+          ApiReturn.error(req, res, new Error(req.fileValidationError), LOC)
+        } else if (!req.file) {
+          ApiReturn.error(req, res, new Error(Message.errors.missingFile), LOC)
+        } else if (err) {
+          ApiReturn.error(req, res, err, LOC);
+        } else {
+          let element = req.body
+          let data = await boardModel.elementUpload(_getSession(req), board, element, req.file)
+          ApiReturn.result(req, res, data, LOC)
+        }
+      })
+    } catch (e) {
+      ApiReturn.error(req, res, e, LOC)
+    }
   }
-
-
 }

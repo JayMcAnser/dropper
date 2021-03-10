@@ -56,6 +56,17 @@ module.exports.AuthUserId = new Promise((resolve) => {
   })
 })
 
+module.exports.AuthUser = new Promise((resolve) => {
+  return User.findOne({email: EMAIL}).then( async(user) => {
+    if (!user) {
+      user = await User.create({name: 'test', email: EMAIL, password: PASSWORD})
+    }
+    resolve(user);
+  })
+})
+
+
+
 
 module.exports.AuthEmail = EMAIL;
 module.exports.AuthPassword = PASSWORD;

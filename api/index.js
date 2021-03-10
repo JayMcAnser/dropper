@@ -3,13 +3,14 @@ const App = require('./vendors/main');
 const Config = require('config');
 const Logging = require('./vendors/lib/logging')
 const BoardController = require('./controllers/board')
+const FileController = require('./controllers/file')
 const StaticSite = require('./vendors/lib/static-site');
 const Helper = require('./vendors/lib/helper')
 
 
 App.use('/api/public',  require('./routes/public'));
 App.use('/api/board', BoardController.validate,  require('./routes/board'));
-
+App.use('/api/file', FileController.validate, require('./routes/file'))
 
 // this must be the last route otherwise it will catch all previous defined routes
 let staticSite = new StaticSite(App);
