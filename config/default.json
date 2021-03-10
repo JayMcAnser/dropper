@@ -4,7 +4,7 @@
     "secretKey" : "Dr0pper"
   },
   "Auth" : {
-    "tokenExpire" : "10s",
+    "tokenExpire" : "1h",
     "refreshExpire" : "10d"
   },
   "Path" : {

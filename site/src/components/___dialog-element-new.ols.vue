@@ -1,19 +1,19 @@
 <template>
-  <drp-panel
-      v-model="dialog"
-      @onClose="closeDialog"
-  >
+  <v-dialog
+      transition="dialog-bottom-transition"
+      content-class="new-dialog"
+      v-model="dialog">
     <v-card>
       <v-container>
-        <div class="inventory"
-             v-show="isElementAdd"
-        >
+          <div class="inventory"
+               v-show="isElementAdd"
+          >
           <v-text-field
               label="Inventory"
               placeholder="Inventory"
               append-icon="mdi-feature-search-outline"
           ></v-text-field>
-        </div>
+          </div>
 
         <v-row
             align="center"
@@ -25,9 +25,9 @@
               justify="center"
               v-for="item in row" :key="item.id">
             <v-btn
-                large
-                @click="add(item.id)"
-                icon>
+              large
+              @click="add(item.id)"
+              icon>
               <v-icon>{{item.icon}}</v-icon>
             </v-btn>
             <div
@@ -40,20 +40,21 @@
         </v-row>
       </v-container>
     </v-card>
-  </drp-panel>
+  </v-dialog>
 </template>
 
 <script>
-  import DrpPanel from "@/components/drp-panel";
+import {debug, warn} from "@/vendors/lib/logging";
+
 export default {
   name: "dialog-element-new",
   data: function() {
     return {
       items: [
         [
-          {id: 'text', caption: 'text', icon: 'mdi-text'},
-          {id: 'image', caption: 'image', icon: 'mdi-image'},
-          {id: 'video', caption: 'video', icon: 'mdi-video'}
+            {id: 'text', caption: 'text', icon: 'mdi-text'},
+            {id: 'image', caption: 'image', icon: 'mdi-image'},
+            {id: 'video', caption: 'video', icon: 'mdi-video'}
         ],
         [
           {id: 'column', caption: 'column', icon: 'mdi-format-columns'},
@@ -65,10 +66,24 @@ export default {
           {id: 'link', caption: 'web-link', icon: 'mdi-link'},
           {id: 'file', caption: 'file', icon: 'mdi-file'}
         ]
-      ]
+      ],
+
+      elementTypes: {
+        text: {
+          caption: 'Text'
+        },
+        image: {
+          caption: 'Image'
+        },
+        layout: {
+          caption: 'layout'
+        },
+        column: {
+          caption: 'column'
+        }
+      }
     }
   },
-  components: {DrpPanel},
   computed: {
     dialog: {
       get: function () {
@@ -87,15 +102,18 @@ export default {
     async add(type) {
       this.$emit('add', type);
     },
-    closeDialog() {
-      this.$store.dispatch('status/dialog', false)
-    }
 
   }
 }
 </script>
 
-<style scoped>
+<style >
+  .new-dialog {
+    position: absolute;
+    bottom: 70px;
+    padding-left: 20px;
+    padding-right: 20px;
+  }
   .inventory {
     margin: 20px 50px 0 50px;
   }

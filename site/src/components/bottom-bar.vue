@@ -4,10 +4,12 @@
         ref="bottomBar"
         absolute
         grow
-
+        :style="{height: calcHeight}"
     >
       <!-- grow: change with used -->
-      <v-btn value="browse">
+      <v-btn value="browse"
+             @click="doClick('browse')"
+      >
         <span>browse</span>
         <v-icon>mdi-view-carousel-outline</v-icon>
       </v-btn>
@@ -15,7 +17,8 @@
         <span></span>
         <v-icon></v-icon>
       </v-btn>
-      <v-btn value="add" >
+      <v-btn
+          @click="doClick('addMenu')" >
         <span>Add</span>
         <v-icon>mdi-plus</v-icon>
       </v-btn>
@@ -24,18 +27,19 @@
       <v-icon></v-icon>
       </v-btn>
       <!-- toggle the edit / view state -->
-      <v-btn @click="doClick('editMode')" v-show="!isEdit">
+      <v-btn @click="doClick('edit')" v-show="!isEdit">
         <span>Edit</span>
         <v-icon>mdi-notebook-edit-outline</v-icon>
       </v-btn>
-      <v-btn @click="doClick('viewMode')"  v-show="isEdit" >
+      <v-btn @click="doClick('view')"  v-show="isEdit" >
         <span>View</span>
         <v-icon>mdi-view-dashboard-outline</v-icon>
       </v-btn>
     </v-bottom-navigation>
-    <v-bottom-sheet
-        v-model="test"
 
+
+    <v-bottom-sheet
+        v-model="showSubBar"
     >
       <v-sheet
           class="upper-bar"
@@ -43,12 +47,8 @@
       >
         <v-bottom-navigation
         >
-          <v-btn
-            icon
-            @click="viewNav('board')"
-          >
-            <v-icon>mdi-billboard</v-icon>
-          </v-btn>
+          THIS IS IN THE BOTTOM BAR
+          <slot name="content"></slot>
         </v-bottom-navigation>
       </v-sheet>
     </v-bottom-sheet>
@@ -62,39 +62,33 @@ export default {
   name: "bottom-bar",
   data: function() {
     return {
-      test: false,
-      barHeight: '20'
+      barHeight: 0
+    }
+  },
+  props:{
+    showSubBar :{
+      type: Boolean,
+      required: false,
+      default: false
     }
   },
   computed: {
+    calcHeight() {
+      return '56px'
+    },
     isEdit() {
       return this.$store.getters['status/isModeEdit']
     },
     cssVars() {
       return {
-        'margin-bottom': this.barHeight + 'px'
+        'margin-bottom': this.barHeight * (this.showSubBar ? 2 : 1) + 'px'
       }
     }
 
   },
   methods: {
     async doClick(value) {
-      try {
-        switch (value) {
-          case 'viewMode':
-            debug('switch to view', 'bottom-bar')
-            await this.$store.dispatch('status/modeView');
-            break;
-          case 'editMode':
-            debug('switch to edit', 'bottom-bar')
-            await this.$store.dispatch('status/modeEdit');
-            break;
-        }
-        debug(`emit. got ${value}`, 'bottom-bar')
-        this.$emit('modeChange', value)
-      } catch (e) {
-        // error is not important: is allready handled by the element-view
-      }
+      this.$emit('modeChange', value);
     }
   },
   updated() {

@@ -4,11 +4,13 @@
   >
     <v-card-title>
       {{element.title}}
+      <!--
       <v-spacer></v-spacer>
       <btn-edit-element
         :element="element"
         >
       </btn-edit-element>
+      -->
     </v-card-title>
     <v-card-text v-if="element.description">{{element.description}}</v-card-text>
   </v-card>
