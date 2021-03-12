@@ -14,6 +14,7 @@ describe('controller.board', () => {
 
   const TEST_BOARD = 'test.ctrl'
   const TEST_BOARD_PUBLIC = 'test.public.ctrl'
+  const TEST_BOARD_NEW_ID = 'test.newid'
   const TEST_BOARD_NO_LOGIN = 'test.ctrl.login';
 
   let TEST_BOARD_ID = 0;
@@ -27,8 +28,36 @@ describe('controller.board', () => {
       let session = {user: await Init.AuthUser};
       // must use ROOT_USER because we logged in as a new user
       await Board.deleteByName(session, TEST_BOARD)
-      await Board.deleteByName(session, TEST_BOARD_PUBLIC)
+      await Board.deleteByName(session, TEST_BOARD_PUBLIC);
+      await Board.deleteByName(session, TEST_BOARD_NEW_ID);
     })
+
+    it ('newId', () => {
+      let lastId = false;
+      return chai.request(server)
+        .get('/board/newid')
+        .set('authorization', token)
+        .then((result) => {
+          assert.equal(result.status, 200);
+          assert.isUndefined(result.body.errors)
+          assert.isDefined(result.body.data.id);
+          lastId = result.body.data.id;
+
+          return chai.request(server)
+            .post('/board')
+            .set('authorization', token)
+            // .type('form')
+            .send({id: lastId, name: TEST_BOARD_NEW_ID, title: TEST_BOARD_NEW_ID})
+            .then((result) => {
+              // the private board
+              assert.equal(result.status, 200);
+              assert.isUndefined(result.body.errors)
+              // assert.equal(result.body.status, Const.status.success, result.body.message);
+              assert.equal(lastId, result.body.data.id, 'did reuse the id');
+            });
+        })
+    })
+
 
     it('create', () => {
       return chai.request(server)
@@ -136,8 +165,8 @@ describe('controller.board', () => {
 
   describe('without login', () => {
     before( async() => {
-      let session = {userId: await Init.AuthUserId};
-      await Board.delete({userId: Board.ROOT_USER}, TEST_BOARD_NO_LOGIN)
+      let session = {user: await Init.AuthUser};
+      await Board.delete(session, TEST_BOARD_NO_LOGIN)
     })
 
     it('create', () => {
@@ -187,7 +216,8 @@ describe('controller.board', () => {
           assert.equal(result.status, 200)
           assert.isDefined(result.body.data.elements);
           assert.equal(Object.keys(result.body.data.elements).length, 1)
-          elementId = Object.keys(result.body.data.elements)[0]
+          let elmKeys =  Object.keys(result.body.data.elements);
+          elementId = result.body.data.elements[elmKeys[0]].id
         })
     });
 

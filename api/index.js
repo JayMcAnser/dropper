@@ -11,6 +11,8 @@ const Helper = require('./vendors/lib/helper')
 App.use('/api/public',  require('./routes/public'));
 App.use('/api/board', BoardController.validate,  require('./routes/board'));
 App.use('/api/file', FileController.validate, require('./routes/file'))
+// temp no Auth
+//App.use('/api/file', require('./routes/file'))
 
 // this must be the last route otherwise it will catch all previous defined routes
 let staticSite = new StaticSite(App);

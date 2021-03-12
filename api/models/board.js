@@ -12,13 +12,14 @@ const Path = require('path');
 const Helper = require('../vendors/lib/helper');
 // const { v4 : uuidv4} = require('uuid');
 const {generate: uuidv4} = require('short-uuid');
+const validateUUID = require('uuid').validate;
+const ShortUUId = require('short-uuid')()
 const JsonFile = require('jsonfile');
 const Const = require('../vendors/lib/const')
 const Messages = require('../lib/const');
 const Logging = require('../vendors/lib/logging');
 const Joi = require('joi');
 const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
-const validateUUID = require('uuid').validate;
 
 const historyActions = {
   imageAdd: 'image.add',
@@ -31,6 +32,7 @@ const historyActions = {
 }
 
 const InsertSchema = Joi.object({
+  id: Joi.string().optional().allow('null', ''),
   title: Joi.string().min(3).max(100),
   name: Joi.string().max(50).required(),
   description: Joi.string().allow(null, ''),
@@ -177,6 +179,11 @@ module.exports = {
     return true
   },
 
+  newId(session) {
+    this._validateSession(session);
+    return {id: uuidv4()}
+  },
+
   create: async function(session, board) {
     this._validateSession(session);
     this.validate(InsertSchema, board);
@@ -186,9 +193,23 @@ module.exports = {
     if (b) {
       throw new Error(`[board] ${Const.results.boardExists}`);
     }
+    if (board.id) {
+      try {
+        if (!validateUUID(ShortUUId.toUUID(board.id))) {
+          throw new StatusError('invalid id', 400, 'board.create')
+        }
+      } catch (e) {
+        throw new StatusError('invalid id', 400, 'board.create')
+      }
+      if (Fs.existsSync(Helper.getFullPath(Config.get('Board.indexFilename'),{
+        rootKey: 'Path.dataRoot',
+        subDirectory: board.id}))) {
+        throw new StatusError('board already exists', 400, 'board.create')
+      }
+    }
 
     let boardStore = {
-      id: uuidv4(),
+      id: board.id ? board.id : uuidv4(), // can be created by previous newId()
       name: board.name,
       title: board.title ? board.title: board.name,
       ownerId: session.user.id,
@@ -735,6 +756,10 @@ module.exports = {
     }
     let indexFilename = Helper.getFullPath('index.json', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`});
     let indexFile = JsonFile.readFileSync(indexFilename);
+    indexFile.filename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`});
+    if (!Fs.existsSync(indexFile.filename)) {
+      Logging.logThrow(new StatusError({message: Messages.errors.dataFileNotFound, status: 404}))
+    }
     if (type) {
       if (indexFile.mimeType.substr(0, type.length) !== type) {
         throw new Error(`mimetype error. (expection ${type}, got ${indexFile.mimeType})`)
