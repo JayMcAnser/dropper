@@ -1,48 +1,64 @@
 <template>
-  <v-card 
-    elevation="0">    
-    <v-card-title v-if="element.title" >{{element.title}}</v-card-title>
+  <v-card
+      @click="elementClick"
+  >
+    <v-card-title>
+      {{element.title}}
+      <!--
+      <v-spacer></v-spacer>
+      <btn-edit-element
+        :element="element"
+        >
+      </btn-edit-element>
+      -->
+    </v-card-title>
     <v-card-text v-if="element.description">{{element.description}}</v-card-text>
   </v-card>
 </template>
 
 <script>
 
-import { pickBy} from 'lodash';
+
+import btnEditElement from './btn-edit-element.vue';
+import {debug} from '../vendors/lib/logging';
 
 // hide properties from the info bar
-const HIDDEN_PROPERTIES = 
+const HIDDEN_PROPERTIES =
   ['type'];
 
 export default {
-  name: "element-unknown",
+  name: "element-text",
   data: function() {
-    return {       
-      showProperties: false
+    return {
+      showProperties: false,
+      text: 'start',
+      backdoor: 0
     }
+  },
+  components: {
+    btnEditElement
   },
   props: {
     element: {
       type: Object,
-      required: true
+      required: true,
+      default: {}
     }
   },
   computed: {
-    elementType() {
-      return this.element.type ? this.element.type : ' - type is missing -'
-    },
-    properties() {
-      let list = _.pickBy(this.element, (value, key) => { return !!HIDDEN_PROPERTIES[key]}) 
-      console.log('element.props', list)
-      return list
-    }
+
   },
+
+
   methods: {
-    
+    elementClick() {
+      debug('', 'element-text.click')
+      this.$emit('activate', this)
+    }
   },
 }
 </script>
 
 <style scoped>
- 
+
 </style>

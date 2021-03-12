@@ -10,7 +10,6 @@ Vue.config.devtools = process.env.NODE_ENV === 'development'
 Vue.config.productionTip = false
 Vue.use(VueZoomer)
 
-// console.log('env:', process.env.VUE_APP_API_URL)
 
 new Vue({
   router,

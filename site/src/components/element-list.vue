@@ -3,6 +3,7 @@
     <component v-for="element in elements" :key="element.id"
       :is="componentType(element)"
       :element="element"
+      @activate="elementClicked(element)"
     >
     </component>
   </div>
@@ -13,6 +14,7 @@ import ElementUnknown from './element-unknown'
 import ElementText from './element-text';
 import ElementImage from './element-image';
 import ElementCanvas from './element-canvas';
+import {debug} from '@/vendors/lib/logging';
 
 const COMPONENT_TYPE = {
   unknown: ElementUnknown,
@@ -23,7 +25,7 @@ const COMPONENT_TYPE = {
 export default {
   name: "element-list",
   data: function() {
-    return {       
+    return {
     }
   },
   props: {
@@ -32,17 +34,20 @@ export default {
       require: true
     }
   },
-  computed: {
-   
-  },
+
   methods: {
-     componentType(element) {
-      if (!COMPONENT_TYPE.hasOwnProperty(element.type)) {
+    componentType(element) {
+      if (!COMPONENT_TYPE[element.type]) {
+        //debug(`unknown element ${element.type}`, 'element-list')
         return COMPONENT_TYPE.unknown
       } else {
         return COMPONENT_TYPE[element.type]
       }
-    }    
+    },
+    elementClicked(element) {
+      this.$emit('activate', element)
+    }
+
   },
 }
 </script>

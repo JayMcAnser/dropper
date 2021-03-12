@@ -10,13 +10,16 @@ const Config = require('config');
 const Fs = require('fs');
 const Path = require('path');
 const Helper = require('../vendors/lib/helper');
-const { v4 : uuidv4} = require('uuid');
+// const { v4 : uuidv4} = require('uuid');
+const {generate: uuidv4} = require('short-uuid');
+const validateUUID = require('uuid').validate;
+const ShortUUId = require('short-uuid')()
 const JsonFile = require('jsonfile');
 const Const = require('../vendors/lib/const')
+const Messages = require('../lib/const');
 const Logging = require('../vendors/lib/logging');
 const Joi = require('joi');
 const {ValidationError, StatusError} = require('../vendors/lib/model-helper')
-const validateUUID = require('uuid').validate;
 
 const historyActions = {
   imageAdd: 'image.add',
@@ -29,6 +32,7 @@ const historyActions = {
 }
 
 const InsertSchema = Joi.object({
+  id: Joi.string().optional().allow('null', ''),
   title: Joi.string().min(3).max(100),
   name: Joi.string().max(50).required(),
   description: Joi.string().allow(null, ''),
@@ -43,13 +47,24 @@ const UpdateSchema = Joi.object({
   isPublic: Joi.bool().default(false)
 })
 
+const ElementLink = Joi.object({
+  id: Joi.string(),
+  // extend this for other basic link versions
+})
+
+
 const ElementInsertSchema = Joi.object({
+  id: Joi.string().optional().allow(null, ''),
   key: Joi.string().max(50),
   type: Joi.string().required(),
   title: Joi.string().min(3).max(100),
 
   description: Joi.string().allow(null, ''),
-  elements: Joi.array().items(Joi.string())
+  elements: Joi.array().items(ElementLink),
+
+  // media files:
+  // the id of the directory in the mime directory
+  mediaId: Joi.string().optional()
 })
 
 const ElementUpdateSchema = Joi.object({
@@ -58,10 +73,15 @@ const ElementUpdateSchema = Joi.object({
   type: Joi.string(),
   title: Joi.string().min(3).max(100),
   description: Joi.string().allow(null, ''),
+  elements: Joi.array().items(ElementLink),
 })
 
 const _isGroupType = (elm) => {
   return ['group','board','column'].indexOf(elm.type) >= 0
+}
+
+const _writingLayout = (session) => {
+  return session.user.debug ? session.user.debug.jsonLayout: {}
 }
 
 const READ = 1;
@@ -76,14 +96,17 @@ module.exports = {
   },
 
   _validateSession: function(session) {
-    if (!session.userId) {
+    if (session.user === undefined) {
       throw new Error(`[board] ${Const.results.missingSession}`);
     }
     return true;
   },
 
   _validateRights: function(session, board, rights) {
-    if (session.userId === this.ROOT_USER || session.userId === board.ownerId) {
+    if (!board.ownerId) {
+      session.log('warn', `missing owner in board ${board.id}`)
+    }
+    if (session.user.id === this.ROOT_USER || session.user.id === board.ownerId) {
       return true; // owner has ALL rights
     }
     if (board.isPublic) {
@@ -102,21 +125,28 @@ module.exports = {
     let boards = []
     for (let index = 0; index < boardIds.length; index++) {
       try {
-        let board = JsonFile.readFileSync(Path.join(dirName, boardIds[index], Config.get('Board.indexFilename')));
-        if (board.ownerId === session.userId ||
-          board.isPublic ||
-          session.userId === this.ROOT_USER ||
-          board.users.findIndex( (u) => u.userId === session.userId) >= 0) {
-          boards.push({
-            id: boardIds[index],
-            name: board.name,
-            title: board.title,
-            isPublic: board.isPublic,
-            description: board.description,
-          })
+        let path = Path.join(dirName, boardIds[index], Config.get('Board.indexFilename'));
+        if (Fs.existsSync(path)) {
+          let board = JsonFile.readFileSync(path);
+          if (board.ownerId === session.user.id ||
+            board.isPublic ||
+            session.user.id === this.ROOT_USER ||
+            board.users.findIndex( (u) => u.user.id === session.user.i) >= 0) {
+            // the basic fields to filter
+            boards.push({
+              id: boardIds[index],
+              name: board.name,
+              title: board.title,
+              isPublic: board.isPublic,
+              ownerId: board.ownerId,
+              description: board.description,
+            })
+          }
+        } else {
+          Logging.log('warn', `[_loadBoards] the index for ${boardIds[index]} does not exist`)
         }
       } catch (e) {
-        Logging.log('warn', `opening baord ${boardIds[index]} returns an error: ${e.message}`)
+        Logging.log('warn', `[_loadBoards] opening baord ${boardIds[index]} returns an error: ${e.message}`)
       }
     }
     return boards;
@@ -126,7 +156,7 @@ module.exports = {
     if (!board.history) { board.history = []}
     let hist = {
       date: Date.now(),
-      userId: session.userId,
+      userId: session.user.id,
       action: action
     }
     if (message) {
@@ -149,6 +179,11 @@ module.exports = {
     return true
   },
 
+  newId(session) {
+    this._validateSession(session);
+    return {id: uuidv4()}
+  },
+
   create: async function(session, board) {
     this._validateSession(session);
     this.validate(InsertSchema, board);
@@ -158,16 +193,30 @@ module.exports = {
     if (b) {
       throw new Error(`[board] ${Const.results.boardExists}`);
     }
+    if (board.id) {
+      try {
+        if (!validateUUID(ShortUUId.toUUID(board.id))) {
+          throw new StatusError('invalid id', 400, 'board.create')
+        }
+      } catch (e) {
+        throw new StatusError('invalid id', 400, 'board.create')
+      }
+      if (Fs.existsSync(Helper.getFullPath(Config.get('Board.indexFilename'),{
+        rootKey: 'Path.dataRoot',
+        subDirectory: board.id}))) {
+        throw new StatusError('board already exists', 400, 'board.create')
+      }
+    }
 
     let boardStore = {
-      id: uuidv4(),
+      id: board.id ? board.id : uuidv4(), // can be created by previous newId()
       name: board.name,
       title: board.title ? board.title: board.name,
-      ownerId: session.userId,
+      ownerId: session.user.id,
       isPublic: !!board.isPublic,
       users: [],
       description: '',
-      history: [{userId: session.userId, date: Date.now(), type: 'created'}],
+      history: [{userId: session.user.id, date: Date.now(), type: 'created'}],
       elements: board.elements ? board.elements: {}
     }
 
@@ -175,7 +224,7 @@ module.exports = {
       rootKey: 'Path.dataRoot',
       subDirectory: boardStore.id,
       makePath: true, returnPaths: true})
-    let result = await JsonFile.writeFile(filename, boardStore);
+    let result = await JsonFile.writeFile(filename, boardStore, _writingLayout(session));
     session.log('debug', `generate board ${boardStore.id} at ${filename}`);
     //ToDo: we should register our board to in the database
     Fs.mkdirSync(Path.join(Path.dirname(filename), 'media'));
@@ -253,6 +302,7 @@ module.exports = {
         rootKey: 'Path.dataRoot',
         subDirectory: board.id
       })
+      // get all the data for this file
       if (Fs.existsSync(filename)) {
         return JsonFile.readFile(filename);
       }
@@ -274,7 +324,7 @@ module.exports = {
       subDirectory: board.id
     });
     if (Fs.existsSync(filename)) {
-      return JsonFile.writeFile(filename, board);
+      return JsonFile.writeFile(filename, board, _writingLayout(session));
     }
     throw new Error(Const.results.boardNotFound)
   },
@@ -318,7 +368,7 @@ module.exports = {
     for (let index = 0; index < fields.length; index++) {
       boardDef[fields[index]] = board[fields[index]];
     }
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
+    return this._write(session, boardDef)
   },
 
   _fieldIsWritable(fieldname) {
@@ -333,7 +383,7 @@ module.exports = {
         boardDef[fieldname] = board[fieldname]
       }
     }
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' }).then( () => {
+    return this._write(session, boardDef).then( () => {
       return this._returnData(boardDef, fields)
     })
   },
@@ -348,19 +398,19 @@ module.exports = {
     this._validateSession(session);
     let boardDef = await this._read(session, board)
     boardDef.isPublic = !!isPublic
-    return this._write(session, boardDef, { spaces: 2, EOL: '\r\n' })
+    return this._write(session, boardDef)
   },
 
   /**
    *
    * @param session
-   * @param boardName
+   * @param id
    * @returns {Promise<boolean>} True did succeed. false could not find recod
    */
 
-  async delete(session, boardName) {
+  async delete(session, id) {
     this._validateSession(session);
-    let board = await this.findOne(session, {name: boardName});
+    let board = await this.findOne(session, {id: id});
     if (board) {
       this._validateRights(session, board, DELETE)
       const Rimraf = require('rimraf');
@@ -369,7 +419,15 @@ module.exports = {
     } else {
       return false;
     }
+  },
 
+  async deleteByName(session, name) {
+    this._validateSession(session);
+    let board = await this.findOne(session, {name: name});
+    if (board) {
+      return this.delete(session, board.id)
+    }
+    return false;
   },
 
   _getImageRec(image) {
@@ -482,6 +540,15 @@ module.exports = {
     return true;
   },
   /**
+   * generate a new element it
+   * @param session
+   * @returns {Promise<Object{id}>}
+   */
+  async elementId(session) {
+    return {id: uuidv4()}
+  },
+
+  /**
    *  add add a new image. Return
    * @param {Session} session
    * @param {Object} board
@@ -493,7 +560,7 @@ module.exports = {
     this.validate(ElementInsertSchema, element)
     this._validateElementKey(board, element)
 
-    element.id = uuidv4();
+    element.id = element.id || uuidv4();
     if (!board.elements) {
       board.elements = {}
     }
@@ -635,7 +702,69 @@ module.exports = {
     return this.save(session, board.id, board, ['history', 'elements']).then( () => {
       return board
     });
+  },
 
+  async elementUpload(session, board, element, storedFile) {
+    Logging.log('debug', `[element.upload] stored file: ${JSON.stringify(storedFile)}`);
+    element.mediaId = uuidv4();
+    let newElement = await this.elementAdd(session, board, element);
+    // so now we have to move the file into position
+    let indexFilename = Helper.getFullPath('index.json', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    let meta = {
+      filename: storedFile.originalname,
+      size: storedFile.size,
+      mimeType: storedFile.mimetype
+    };
+    JsonFile.writeFileSync(indexFilename, meta);
+
+    let datFilename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    Fs.renameSync(storedFile.path, datFilename);
+    return element;
+  },
+
+  /**
+   *
+   * @param session
+   * @param board
+   * @param elementId
+   * @param index the index into the multi files
+   */
+  getStream(session, board, elementId, index) {
+    this._validateSession(session);
+    if (index) {
+      Logging.warn(`[board.getStream] multi file elements are not yet supported ${index}`)
+    }
+    let element = board.elements[elementId];
+    if (!element) {
+      throw new Error(Messages.errors.elementNotFound)
+    }
+    let datFilename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`, makePath: true});
+    if (!Fs.existsSync(datFilename)) {
+      throw new Error(`file does not exist`)
+    }
+    return Fs.createReadStream(datFilename);
+  },
+
+  getStreamInfo(session, board, elementId, index, type) {
+    this._validateSession(session);
+    if (index) {
+      Logging.warn(`[board.getStream] multi file elements are not yet supported ${index}`)
+    }
+    let element = board.elements[elementId];
+    if (!element) {
+      throw new Error(Messages.errors.elementNotFound)
+    }
+    let indexFilename = Helper.getFullPath('index.json', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`});
+    let indexFile = JsonFile.readFileSync(indexFilename);
+    indexFile.filename = Helper.getFullPath('index.dat', {rootKey: 'Path.dataRoot', subDirectory: `${board.id}/media/${element.mediaId}`});
+    if (!Fs.existsSync(indexFile.filename)) {
+      Logging.logThrow(new StatusError({message: Messages.errors.dataFileNotFound, status: 404}))
+    }
+    if (type) {
+      if (indexFile.mimeType.substr(0, type.length) !== type) {
+        throw new Error(`mimetype error. (expection ${type}, got ${indexFile.mimeType})`)
+      }
+    }
+    return indexFile
   }
-
 }

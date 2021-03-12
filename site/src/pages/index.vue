@@ -1,9 +1,9 @@
 <template>
-  <v-app id="app">    
+  <v-app id="app">
     <router-view
-      :key="$route.fullPath"      
-    >  
-    </router-view>     
+      :key="$route.fullPath"
+    >
+    </router-view>
     <v-navigation-drawer
       v-model="rightDrawer"
       absolute
@@ -13,7 +13,7 @@
       <v-list>
         <v-list-item>
           <v-list-item-avatar>
-            <v-img src="https://randomuser.me/api/portraits/men/78.jpg"></v-img>         
+            <v-img src="https://randomuser.me/api/portraits/men/78.jpg"></v-img>
           </v-list-item-avatar>
 
           <v-list-item-content>
@@ -22,19 +22,19 @@
           </v-list-item-content>
         </v-list-item>
 
-        <v-divider></v-divider>     
+        <v-divider></v-divider>
 
         <v-list-group
           prepend-icon="mdi-home-city"
         >
-          <template v-slot:activator>           
+          <template v-slot:activator>
             <v-list-item-content>
               <v-list-item-title v-text="'New'"></v-list-item-title>
             </v-list-item-content>
           </template>
 
           <v-list-item
-            v-for="newAction in newActions" 
+            v-for="newAction in newActions"
             :key="newAction.id"
             @click="menuURL(newAction.id)"
           >
@@ -47,7 +47,7 @@
           </v-list-item>
         </v-list-group>
 
- <v-divider></v-divider>     
+ <v-divider></v-divider>
 
         <v-list-item
           @click="logout"
@@ -60,25 +60,25 @@
           </v-list-item-content>
         </v-list-item>
       </v-list>
-    </v-navigation-drawer>    
+    </v-navigation-drawer>
   </v-app>
 </template>
 
 <script>
-import {debug} from '../vendors/lib/logging'
+import {debug, warn} from '../vendors/lib/logging'
 /**
- * this page is loaded by ALL pages * 
+ * this page is loaded by ALL pages *
  */
 const NEW_ITEMS = [
   { id: 1, title: 'Board', icon: 'mdi-vector-combine' , actionURL: '/boardNew', actionState: 1},
   { id: 2, title: 'Column', icon: 'mdi-table-column-plus-after', action: 'columnDialog'},
-  { id: 3, title: 'Element', icon: 'mdi-power-socket-jp', actionState: 0}
+  { id: 3, title: 'Element', icon: 'mdi-power-socket-jp', action: 'elementNew'}
 ]
 
 export default {
   data: function() {
-    return {  
-      newActions: NEW_ITEMS  
+    return {
+      newActions: NEW_ITEMS
     }
   },
   computed: {
@@ -87,49 +87,54 @@ export default {
         return this.$store.getters['status/leftDrawer']
       },
       set: function(val) {
-        this.$store.dispatch('status/leftDrawer', val)  
-      }
-      
-    },
-    rightDrawer: {
-      get: function() {        
-        return  this.$store.getters['status/rightDrawer'];
-      },
-      set: function(val) {
-        this.$store.dispatch('status/rightDrawer', val)   
+        this.$store.dispatch('status/leftDrawer', val)
       }
 
     },
-    user() {      
+    rightDrawer: {
+      get: function() {
+        return  this.$store.getters['status/rightDrawer'];
+      },
+      set: function(val) {
+        this.$store.dispatch('status/rightDrawer', val)
+      }
+
+    },
+    user() {
       return this.$store.getters['auth/user']
     }
   },
   methods: {
     async logout() {
-      await this.$store.dispatch('auth/logout');      
+      await this.$store.dispatch('auth/logout');
       this.$store.dispatch('status/rightDrawer', false)
       this.$router.go()
     },
     async menuURL(id) {
       let active = NEW_ITEMS.find( (i) => i.id === id);
-      if (active) {        
+      if (active) {
         if (active.actionURL) {
           this.$router.push(active.actionURL);
         } else if (active.action) {
+          debug(`opening: ${active.action}`, 'index')
           await this.$store.dispatch('status/rightDrawer', false)
-          await this.$store.dispatch('status/dialog', {name: 'columnDialog', id:-1});
+          await this.$store.dispatch('status/dialog', {name: active.action, id:-1});
         } else {
           warn(`no action in ${JSON.stringify(active)}`, 'page.index');
         }
       } else {
         debug(`action ${id} not found`, 'pages.index');
       }
-      
-    }  
-  }, 
+
+    }
+  },
   async mounted() {
     debug('check restore')
-    this.$store.dispatch('auth/restore');
+    try {
+      this.$store.dispatch('auth/restore');
+    } catch (e) {
+      debug(`could not restore, ${e.message}`, ['index'])
+    }
     // for (let index = 0; index < NEW_ITEMS.length; index++) {
     //   if (NEW_ITEMS[index].action) {
     //     await this.$store.dispatch('status/stateRegister', {key: NEW_ITEMS[index].action })
@@ -143,7 +148,7 @@ export default {
 #app {
   font-family: Avenir, Helvetica, Arial, sans-serif;
   -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;  
+  -moz-osx-font-smoothing: grayscale;
   color: #2c3e50;
 }
 

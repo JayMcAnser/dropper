@@ -1,100 +1,115 @@
 <template>
   <div class="page">
-    <board-bar
-      :columns="columns"
-    ></board-bar>  
-    <h2>Board {{ board.title}}</h2>
-    <column-view
-      :column="column"
-    ></column-view>
+    <board-bar></board-bar>
+    <board-layouts
+      :board="board">
+    </board-layouts>
+
+
+
     <error-dialog
       @retry="onRetry"
       @cancel="onCancel"
     ></error-dialog>
-    <column-dialog>
-    </column-dialog>
+
+    <dialog-board
+        :board="board"
+    >
+    </dialog-board>
+
+    <bottom-bar
+        @modeChange="modeChange"
+    >
+
+    </bottom-bar>
   </div>
 </template>
 
 <script>
 
 import BoardBar from '../components/board-bar.vue'
-import ColumnDialog from '../components/column-dialog.vue'
+
 import ColumnView from '../components/column-view.vue'
 import ErrorDialog from '../vendors/components/error-dialog.vue'
-import {debug, error} from '../vendors/lib/logging'
+import {debug, error, warn} from '../vendors/lib/logging'
+import LayoutInventory from "@/components/layout-inventory";
+import BoardLayouts from "@/components/board-layouts";
+import BottomBar from "@/components/bottom-bar";
+import BoardEdit from "@/pages/board-edit";
+import DialogBoard, {BOARD_EDIT} from '@/components/dialog-board';
 
- 
+const LOC = 'board'
+
 export default {
   name: 'Board',
   data: function() {
-    return {    
-      columnDialog: false,
+    return {
+      columnDialog: false
     }
   },
   params: {
     id: String
   },
   components: {
+    DialogBoard,
+    BoardEdit,
+    BottomBar,
+    LayoutInventory,
+    BoardLayouts,
     BoardBar,
-    ColumnView,    
-    ErrorDialog,
-    ColumnDialog
+    ColumnView,
+    ErrorDialog
   },
   computed: {
     board() {
-      let board = this.$store.getters['board/active'];
-      // debug(`loading board ${JSON.stringify(board)}`) 
-      return this.$store.getters['board/active'];
+      return this.$store.getters['board/active']
     },
-    columns() {
-      let columns = this.$store.getters['board/columns'];
-      // debug(`loading columns ${JSON.stringify(columns)}`) 
-      return this.$store.getters['board/columns'];
-    },
-    column() {
-      let column = this.$store.getters['board/column'];
-      // debug(`column: ${JSON.stringify(column)}`)
-      return this.$store.getters['board/column']
-    }  
-
   },
   methods: {
     async onRetry() {
       debug(`retry error`)
       await this.reload()
-    },  
+    },
     async onCancel() {
       debug(`cancel error`)
       this.$router.go(-1)
     },
-    async reload() {
-      // debug(`activate board`)
-      if (this.$route.params.id) {      
-        await this.$store.dispatch('board/activate', {id: this.$route.params.id}) 
-      } else {
-        debug('open active board', 'page.board')
+    async modeChange(mode) {
+      const LOC = 'element-view';
+      try {
+        switch (mode) {
+          case 'edit':
+            debug('switch to edit', LOC)
+            await this.$store.dispatch('status/dialog', {name: BOARD_EDIT, id: this.board.id});
+            break;
+          case 'view':
+            debug('switch to view',)
+            await this.$store.dispatch('status/modeView');
+            break
+          case 'addMenu':
+            // if in edit mode we do: add to element
+            // otherwise we do add to board
+            await this.$store.dispatch('status/dialog', {name: BOARD_EDIT, mode: 'new'});
+            break;
+          case 'search':
+            await this.$router.push('/search')
+            break;
+          case 'browse':
+            this.bottomSheet = true;
+            break
+          default:
+            warn(`unknown mode ${mode}`, LOC)
+        }
+      } catch (e) {
+        // the error is handled by the dispatch('status/...')
       }
     }
-
   },
 
-  async updated() {
-    await this.reload();
-  },
-  async mounted() {
-    try {
-      // debug('route changed', 'board.mounted')
-      await this.reload();      
-    } catch(e) {
-      error(e, 'page.board')
-    }
-    
-  }
 }
 </script>
 <style scoped>
   .page {
-    margin-top: 62px  
+    margin-top: 62px
   }
 </style>
