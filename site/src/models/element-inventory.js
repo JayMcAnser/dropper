@@ -69,6 +69,13 @@ var ElementInventory = /** @class */ (function (_super) {
         }
         return this._children;
     };
+    Object.defineProperty(ElementInventory.prototype, "length", {
+        get: function () {
+            return this.children().length;
+        },
+        enumerable: false,
+        configurable: true
+    });
     return ElementInventory;
 }(element_layout_1.default));
 exports.default = ElementInventory;

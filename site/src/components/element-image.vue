@@ -1,5 +1,8 @@
 <template>
-  <v-card>
+  <v-card
+      @click="elementClick"
+  >
+    image
     <image-scroll
       :element="element">
 
@@ -11,6 +14,7 @@
 
 
 import ImageScroll from "@/components/image-scroll";
+import {debug} from "@/vendors/lib/logging";
 export default {
   name: "element-image",
   components: {ImageScroll},
@@ -22,6 +26,12 @@ export default {
     element: {
       type: Object,
       required: true
+    }
+  },
+  methods: {
+    elementClick() {
+      debug('', 'element-image.click')
+      this.$emit('activate', this)
     }
   },
 }

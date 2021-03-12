@@ -2,6 +2,7 @@
 
 
 import { axiosActions } from '../vendors/lib/const';
+import { warn } from '../vendors/lib/logging';
 // import Axios, { setHeaders } from '../vendors/lib/axios';
 // import {apiState} from '../vendors/lib/const';
 
@@ -33,11 +34,56 @@ class Board {
   private _deleted: ElementArray = [];
   private _isDirty: boolean = false;
   private _changes: Object = {};
-  private _inventory: ElementInventory;
+  private _orgData: Object = {};
+  private _inventory: ElementInventory = undefined;
+  private _isNew: boolean = false;
+  private no_update_properties = ['id', 'type'];
 
-  constructor(board: BoardStore) {
+  constructor(board: BoardStore, options? ) {
     this.board = board;
     this._elements = new Map();
+    this._isNew = !! (options && options.newId);
+
+    if (options && options.isNew) {
+      debug(`create new board with ${board.id}`, 'board.constructor')
+      this._changes['id'] = board.id;
+    }
+    let vm = this;
+    const boardHandler = {
+      deleteProperty: function(target, prop) {
+        if (! vm.no_update_properties.includes(prop)) {
+          delete target[prop]
+        }
+        return true;
+      },
+      set: function (target, prop, value, receiver) {
+        debug(`tracking change of ${prop}`, 'board.handler')
+        if (vm.no_update_properties.includes(prop)) {
+          return true;
+        }
+
+        if (target[prop] !== value) {
+          debug(value, 'board.change')
+          vm._changes[prop] = value;
+          vm._isDirty = true;
+          if (!vm._orgData[prop]) {
+            vm._orgData[prop] = board[prop]
+          }
+          return Reflect.set(target, prop, value, receiver)
+        } else {
+          return true;
+        }
+      }
+    }
+    if (!board) {
+      warn(`board is missing the initialisation object`, 'board.constructor')
+      this.board = (new Proxy({}, boardHandler)) as BoardStore;
+    } else {
+      if (!board.id) {
+        warn(`board is missing the id`, 'board.constructor')
+      }
+      this.board = new Proxy(board, boardHandler);
+    }
   }
 
   /**
@@ -60,6 +106,22 @@ class Board {
 
   }
 
+  get isNew() : boolean {
+    return this._isNew
+  }
+  get model() : BoardStore {
+    return this.board
+  }
+
+  public editSchema() {
+    return {
+      type: 'object',
+      properties: {
+        title: {type: 'string'},
+        type: {type: 'string'},
+      }
+    }
+  }
 
   get inventory() : Element { // ElementArray {
     if (!this._inventory) {
@@ -72,6 +134,10 @@ class Board {
     //   return this._inventory.children().map(e => e.item)
     // }
   }
+  get inventoryElements() : ElementArray {
+    return this.inventory.children().map(e => e.item)
+  }
+
 
   layouts(options): ElementArray {
     if (!this._inventory) {
@@ -90,21 +156,26 @@ class Board {
   get isDirty() {
     return this._isDirty || this.dirtyElements.length > 0 || this._deleted.length > 0;
   }
+  private clearDirty() {
+    this._isDirty = false;
+    this._inventory = undefined;
+    this._isNew = false;
+  }
   get id() {
     return this.board.id
   }
   get name() {
     return this.board.name;
   }
-  set name(value) {
-    this.addChange('name', value)
-  }
+  // set name(value) {
+  //   this.addChange('name', value)
+  // }
   get title() {
     return this.board.title
   }
-  set title(value) {
-    this.addChange('title', value)
-  }
+  // set title(value) {
+  //   this.addChange('title', value)
+  // }
 
   addChange(fieldname, value) {
     if (this.board[fieldname] !== value) {
@@ -179,8 +250,24 @@ class Board {
   }
 
   async save() {
-    if (this.isDirty) {
+    if (this.isDirty || this.isNew) {
       // ToDo should start a transaction on the server
+      if (this.hasChanges() || this.isNew) {
+        let result;
+        if (this.isNew) {
+          // the id should be in the changeInfo!!
+          result = await Axios.post(`/board`, this.changedInfo());
+        } else {
+          result = await Axios.patch(`/board/${this.id}`, this.changedInfo());
+        }
+        if (!axiosActions.isOk(result)) {
+          // rollback the transaction
+          throw newError(axiosActions.errors(result), 'board.update');
+        } else {
+          this._changes = {};
+        }
+      }
+
       let dirtyOnes = this.dirtyElements;
       for (let index = 0; index < dirtyOnes.length; index++) {
         let elmData = dirtyOnes[index].changedData;
@@ -205,17 +292,9 @@ class Board {
         }
       }
       this._deleted = [];
-      if (this.hasChanges()) {
-        let result = await Axios.patch(`/board/${this.id}`, this.changedInfo());
-        if (!axiosActions.isOk(result)) {
-          // rollback the transaction
-          throw newError(axiosActions.errors(result), 'board.update');
-        } else {
-          this._changes = {};
-        }
-      }
+
       // commit the transaction
-      this._isDirty = false;
+      this.clearDirty()
     }
     this._clearCache();
     debug(this._inventory, 'board.ts')
@@ -230,7 +309,7 @@ class Board {
       }
     }
     this._changes = {};
-    this._isDirty = false;
+    this.clearDirty()
   }
 
   async elementCreate(data) {

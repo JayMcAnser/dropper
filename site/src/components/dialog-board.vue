@@ -71,8 +71,8 @@ export default {
       }
     },
     schema() {
-      if (this.board) {
-        debug(this.board, 'dialog-board')
+      if (Object.keys(this.board).length) {
+        //debug(this.board, 'dialog-board')
         return this.board.editSchema()
       }
       return {}
@@ -110,6 +110,7 @@ export default {
       }
     },
     async doCancel() {
+      debug(this.board, 'dialog-board.cancel')
       await this.board.cancel()
       this.hideDialog()
     },

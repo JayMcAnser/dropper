@@ -43,6 +43,7 @@ import VJsf from '@koumoul/vjsf/lib/VJsf.js'
 import '@koumoul/vjsf/lib/VJsf.css';
 import {cloneDeep} from 'lodash';
 
+export const ELEMENT_EDIT = 'elementDialog';
 export default {
   name: "dialog-element",
   data: function() {
@@ -60,7 +61,7 @@ export default {
   computed: {
     dialog: {
       get: function () {
-        return this.$store.getters['status/dialogName'] === 'elementDialog'
+        return this.$store.getters['status/dialogName'] === ELEMENT_EDIT
       },
       set: function (value) {
         this.$store.dispatch('status/dialog', false)

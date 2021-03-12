@@ -1,30 +1,33 @@
 <template>
-  <div>
-    <h2>Board List</h2>
-  <v-list two-line>
-    <v-list-item v-for="board in boards" :key="board.id">
-      <v-list-item-content
-      @click="openBoard(board.id)"
-      >
-        <v-list-item-title class="title">{{ board.title}}</v-list-item-title>
-        {{ board.description }} ({{publicText(board.isPublic)}})
-      </v-list-item-content>
-      <v-list-item-action>
+  <v-card>
+    <div>
+      <v-toolbar>
+        <v-toolbar-title>Boards</v-toolbar-title>
+        <v-spacer></v-spacer>
+        <v-text-field
+        ></v-text-field>
         <v-btn
-            color="primary"
-            fab
-            x-small
-            dark
-            float-right
-            @click="editBoard(board.id)"
+            icon
+            class="hidden-xs-only"
         >
-          <v-icon>mdi-pencil</v-icon>
+          <v-icon>mdi-magnify</v-icon>
         </v-btn>
-      </v-list-item-action>
+      </v-toolbar>
+    </div>
 
-    </v-list-item>
-  </v-list>
-  </div>
+    <v-list two-line>
+      <v-list-item v-for="board in boards" :key="board.id">
+        <v-list-item-content
+        @click="openBoard(board.id)"
+        >
+          <v-list-item-title class="title">{{ board.title}}<div class="title-right"><v-icon>{{publicIcon(board)}}</v-icon></div></v-list-item-title>
+          <v-list-item>
+            <div class="description">{{ board.description }}</div>
+          </v-list-item>
+        </v-list-item-content>
+      </v-list-item>
+    </v-list>
+  </v-card>
 </template>
 
 <script>
@@ -43,8 +46,11 @@ export default {
 
   },
   methods: {
-    publicText(isPublic) {
-      return isPublic ? 'public' : 'private'
+    publicIcon(board) {
+      if (board.isPublic) {
+        return ''
+      }
+      return 'mdi-shield-lock';
     },
     async openBoard(id) {
       let url = `board/${id}`;
@@ -65,7 +71,7 @@ export default {
     }
   },
   async mounted() {
-    this.refresh();
+    await this.refresh();
   }
 }
 </script>
@@ -73,5 +79,13 @@ export default {
 <style scoped>
   .title {
     font-weight: bold;
+  }
+  .title-right {
+    display: inline;
+    float: right;
+  }
+  .description {
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 </style>

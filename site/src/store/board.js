@@ -2,6 +2,7 @@
 
 import {debug, newError} from "../vendors/lib/logging";
 import Database from '../models/database';
+import Board from '../models/board';
 
 export const state = () => ({
   database: {},
@@ -39,6 +40,18 @@ export const actions = {
       throw new Error(e.message)
     }
   },
+  async create({state, commit, dispatch}, data) {
+    try {
+      await dispatch('status/clear', undefined, {root: true})
+      commit('initDb');
+      state.board = await state.database.boardNew();
+      debug(state.board.id,'board.create')
+    } catch (e) {
+      await dispatch('status/error', e, {root: true});
+      throw e
+    }
+  },
+
 
   async save({state, dispatch}) {
     if (state.board) {
@@ -65,7 +78,8 @@ export const actions = {
   async activate({state, commit}, data) {
     if (!Object.keys(state.board).length || state.board.id !== data.id) {
       commit('initDb')
-      state.board = await state.database.boardById(data.id)
+      state.board = await state.database.boardById(data.id);
+      debug(data.id, 'board.active')
     }
   }
 }

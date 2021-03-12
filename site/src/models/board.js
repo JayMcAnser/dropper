@@ -64,20 +64,67 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var const_1 = require("../vendors/lib/const");
+var logging_1 = require("../vendors/lib/logging");
 // import Axios, { setHeaders } from '../vendors/lib/axios';
 // import {apiState} from '../vendors/lib/const';
 var axios_1 = require("../vendors/lib/axios");
-var logging_1 = require("../vendors/lib/logging");
+var logging_2 = require("../vendors/lib/logging");
 var factory_1 = require("./factory");
 var element_inventory_1 = require("./element-inventory");
 var Board = /** @class */ (function () {
-    function Board(board) {
+    function Board(board, options) {
         this._loaded = false;
         this._deleted = [];
         this._isDirty = false;
         this._changes = {};
+        this._orgData = {};
+        this._inventory = undefined;
+        this._isNew = false;
+        this.no_update_properties = ['id', 'type'];
         this.board = board;
         this._elements = new Map();
+        this._isNew = !!(options && options.newId);
+        if (options && options.isNew) {
+            logging_2.debug("create new board with " + board.id, 'board.constructor');
+            this._changes['id'] = board.id;
+        }
+        var vm = this;
+        var boardHandler = {
+            deleteProperty: function (target, prop) {
+                if (!vm.no_update_properties.includes(prop)) {
+                    delete target[prop];
+                }
+                return true;
+            },
+            set: function (target, prop, value, receiver) {
+                logging_2.debug("tracking change of " + prop, 'board.handler');
+                if (vm.no_update_properties.includes(prop)) {
+                    return true;
+                }
+                if (target[prop] !== value) {
+                    logging_2.debug(value, 'board.change');
+                    vm._changes[prop] = value;
+                    vm._isDirty = true;
+                    if (!vm._orgData[prop]) {
+                        vm._orgData[prop] = board[prop];
+                    }
+                    return Reflect.set(target, prop, value, receiver);
+                }
+                else {
+                    return true;
+                }
+            }
+        };
+        if (!board) {
+            logging_1.warn("board is missing the initialisation object", 'board.constructor');
+            this.board = (new Proxy({}, boardHandler));
+        }
+        else {
+            if (!board.id) {
+                logging_1.warn("board is missing the id", 'board.constructor');
+            }
+            this.board = new Proxy(board, boardHandler);
+        }
     }
     /**
      * load the board information from the raw data
@@ -96,6 +143,29 @@ var Board = /** @class */ (function () {
     };
     Board.prototype._clearCache = function () {
     };
+    Object.defineProperty(Board.prototype, "isNew", {
+        get: function () {
+            return this._isNew;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Board.prototype, "model", {
+        get: function () {
+            return this.board;
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Board.prototype.editSchema = function () {
+        return {
+            type: 'object',
+            properties: {
+                title: { type: 'string' },
+                type: { type: 'string' },
+            }
+        };
+    };
     Object.defineProperty(Board.prototype, "inventory", {
         get: function () {
             if (!this._inventory) {
@@ -107,6 +177,13 @@ var Board = /** @class */ (function () {
             // } else {
             //   return this._inventory.children().map(e => e.item)
             // }
+        },
+        enumerable: false,
+        configurable: true
+    });
+    Object.defineProperty(Board.prototype, "inventoryElements", {
+        get: function () {
+            return this.inventory.children().map(function (e) { return e.item; });
         },
         enumerable: false,
         configurable: true
@@ -130,6 +207,11 @@ var Board = /** @class */ (function () {
         enumerable: false,
         configurable: true
     });
+    Board.prototype.clearDirty = function () {
+        this._isDirty = false;
+        this._inventory = undefined;
+        this._isNew = false;
+    };
     Object.defineProperty(Board.prototype, "id", {
         get: function () {
             return this.board.id;
@@ -141,22 +223,22 @@ var Board = /** @class */ (function () {
         get: function () {
             return this.board.name;
         },
-        set: function (value) {
-            this.addChange('name', value);
-        },
         enumerable: false,
         configurable: true
     });
     Object.defineProperty(Board.prototype, "title", {
+        // set name(value) {
+        //   this.addChange('name', value)
+        // }
         get: function () {
             return this.board.title;
-        },
-        set: function (value) {
-            this.addChange('title', value);
         },
         enumerable: false,
         configurable: true
     });
+    // set title(value) {
+    //   this.addChange('title', value)
+    // }
     Board.prototype.addChange = function (fieldname, value) {
         if (this.board[fieldname] !== value) {
             this.board[fieldname] = value;
@@ -241,77 +323,86 @@ var Board = /** @class */ (function () {
     });
     Board.prototype.save = function () {
         return __awaiter(this, void 0, void 0, function () {
-            var dirtyOnes, index, elmData, result, index, result, result;
+            var result, dirtyOnes, index, elmData, result, index, result;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!this.isDirty) return [3 /*break*/, 14];
-                        dirtyOnes = this.dirtyElements;
-                        index = 0;
-                        _a.label = 1;
-                    case 1:
-                        if (!(index < dirtyOnes.length)) return [3 /*break*/, 7];
-                        elmData = dirtyOnes[index].changedData;
+                        if (!(this.isDirty || this.isNew)) return [3 /*break*/, 17];
+                        if (!(this.hasChanges() || this.isNew)) return [3 /*break*/, 5];
                         result = void 0;
-                        if (!dirtyOnes[index]._isNew) return [3 /*break*/, 3];
-                        return [4 /*yield*/, axios_1.default.post("board/" + this.id + "/element", elmData)];
-                    case 2:
+                        if (!this.isNew) return [3 /*break*/, 2];
+                        return [4 /*yield*/, axios_1.default.post("/board", this.changedInfo())];
+                    case 1:
+                        // the id should be in the changeInfo!!
                         result = _a.sent();
-                        return [3 /*break*/, 5];
-                    case 3: return [4 /*yield*/, axios_1.default.patch("/board/" + this.id + "/element/" + dirtyOnes[index].id, elmData)];
+                        return [3 /*break*/, 4];
+                    case 2: return [4 /*yield*/, axios_1.default.patch("/board/" + this.id, this.changedInfo())];
+                    case 3:
+                        result = _a.sent();
+                        _a.label = 4;
                     case 4:
-                        result = _a.sent();
+                        if (!const_1.axiosActions.isOk(result)) {
+                            // rollback the transaction
+                            throw logging_2.newError(const_1.axiosActions.errors(result), 'board.update');
+                        }
+                        else {
+                            this._changes = {};
+                        }
                         _a.label = 5;
                     case 5:
+                        dirtyOnes = this.dirtyElements;
+                        index = 0;
+                        _a.label = 6;
+                    case 6:
+                        if (!(index < dirtyOnes.length)) return [3 /*break*/, 12];
+                        elmData = dirtyOnes[index].changedData;
+                        result = void 0;
+                        if (!dirtyOnes[index]._isNew) return [3 /*break*/, 8];
+                        return [4 /*yield*/, axios_1.default.post("board/" + this.id + "/element", elmData)];
+                    case 7:
+                        result = _a.sent();
+                        return [3 /*break*/, 10];
+                    case 8: return [4 /*yield*/, axios_1.default.patch("/board/" + this.id + "/element/" + dirtyOnes[index].id, elmData)];
+                    case 9:
+                        result = _a.sent();
+                        _a.label = 10;
+                    case 10:
                         if (const_1.axiosActions.isOk(result)) {
                             dirtyOnes[index].dirtyClear();
                         }
                         else {
                             // rollback the transaction
-                            throw logging_1.newError(const_1.axiosActions.errors(result), 'board.elementUpdate');
+                            throw logging_2.newError(const_1.axiosActions.errors(result), 'board.elementUpdate');
                         }
-                        _a.label = 6;
-                    case 6:
+                        _a.label = 11;
+                    case 11:
                         index++;
-                        return [3 /*break*/, 1];
-                    case 7:
+                        return [3 /*break*/, 6];
+                    case 12:
                         index = 0;
-                        _a.label = 8;
-                    case 8:
-                        if (!(index < this._deleted.length)) return [3 /*break*/, 11];
+                        _a.label = 13;
+                    case 13:
+                        if (!(index < this._deleted.length)) return [3 /*break*/, 16];
                         return [4 /*yield*/, axios_1.default.delete("board/" + this.id + "/element/" + this._deleted[index].id)];
-                    case 9:
+                    case 14:
                         result = _a.sent();
                         if (const_1.axiosActions.isOk(result)) {
                         }
                         else {
-                            throw logging_1.newError(const_1.axiosActions.errors(result), 'board.elementDelete');
+                            throw logging_2.newError(const_1.axiosActions.errors(result), 'board.elementDelete');
                         }
-                        _a.label = 10;
-                    case 10:
+                        _a.label = 15;
+                    case 15:
                         index++;
-                        return [3 /*break*/, 8];
-                    case 11:
+                        return [3 /*break*/, 13];
+                    case 16:
                         this._deleted = [];
-                        if (!this.hasChanges()) return [3 /*break*/, 13];
-                        return [4 /*yield*/, axios_1.default.patch("/board/" + this.id, this.changedInfo())];
-                    case 12:
-                        result = _a.sent();
-                        if (!const_1.axiosActions.isOk(result)) {
-                            // rollback the transaction
-                            throw logging_1.newError(const_1.axiosActions.errors(result), 'board.update');
-                        }
-                        else {
-                            this._changes = {};
-                        }
-                        _a.label = 13;
-                    case 13:
                         // commit the transaction
-                        this._isDirty = false;
-                        _a.label = 14;
-                    case 14:
+                        this.clearDirty();
+                        _a.label = 17;
+                    case 17:
                         this._clearCache();
-                        logging_1.debug(this._inventory, 'board.ts');
+                        logging_2.debug(this._inventory, 'board.ts');
                         return [2 /*return*/, this];
                 }
             });
@@ -351,7 +442,7 @@ var Board = /** @class */ (function () {
                         return [7 /*endfinally*/];
                     case 7:
                         this._changes = {};
-                        this._isDirty = false;
+                        this.clearDirty();
                         return [2 /*return*/];
                 }
             });
@@ -374,7 +465,7 @@ var Board = /** @class */ (function () {
                             return [2 /*return*/, elementClass];
                         }
                         else {
-                            throw logging_1.newError(const_1.axiosActions.errors(result), 'board.elementCreate');
+                            throw logging_2.newError(const_1.axiosActions.errors(result), 'board.elementCreate');
                         }
                         return [2 /*return*/];
                 }
@@ -388,7 +479,7 @@ var Board = /** @class */ (function () {
         return __awaiter(this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 if (element.isNew) {
-                    logging_1.debug("remove " + element.id, 'board.elementCancel');
+                    logging_2.debug("remove " + element.id, 'board.elementCancel');
                     this._elements.delete(element.id);
                 }
                 else {

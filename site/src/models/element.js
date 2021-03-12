@@ -138,8 +138,11 @@ var Element = /** @class */ (function () {
         this._isNew = !!(options && options.isNew);
         if (this.isNew) {
             // we need the id and the type to create the element on the server
-            vm._changedData['id'] = element.id;
-            vm._changedData['type'] = element.type;
+            for (var fieldname in element) {
+                vm._changedData[fieldname] = element[fieldname];
+            }
+            // vm._changedData['id'] = element.id;
+            // vm._changedData['type'] = element.type;
         }
     }
     Object.defineProperty(Element.prototype, "type", {

@@ -1,26 +1,33 @@
 <template>
-  <v-img>
-
-  </v-img>
+  <div>
+    <img v-auth-image="imageUrl" />>
+  </div>
 </template>
 
 <script>
-export default {
-  name: "image-view",
-  props: {
-    element: {
-      type: Object,
-      required: true
-    }
-  },
-  computed: {
-    imageUrl() {
-      return
+  import axios from 'axios';
+  import Vue from 'vue';
+  import VueAuthImage from 'vue-auth-image';
+
+  Vue.use(VueAuthImage);
+  export default {
+    name: "image-view",
+    props: {
+      element: {
+        type: Object,
+        required: true
+      }
+    },
+    computed: {
+      imageUrl() {
+        return this.element.url
+      }
     }
   }
-}
 </script>
 
 <style scoped>
-
+  img {
+    width: 100%;
+  }
 </style>

@@ -73,6 +73,7 @@ export default {
     this.board = this.$store.getters['board/active'];
     // debug(`board: ${this.board.id}`, 'view.create')
     this.elementId = this.$route.params.elementId;
+    debug(this.elementId, 'element.view')
     if (!this.elementId) {
       warn(`missing elementId for param`,'page.view');
     }
@@ -101,6 +102,9 @@ export default {
             // if in edit mode we do: add to element
             // otherwise we do add to board
             await this.$store.dispatch('status/dialog', {name: 'elementNew', mode: this.isEdit ? 'element' : 'board'});
+            break;
+          case 'search':
+            await this.$router.push('/search')
             break;
           case 'browse':
             this.bottomSheet = true;

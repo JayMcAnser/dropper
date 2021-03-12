@@ -221,9 +221,42 @@ var Database = /** @class */ (function () {
             });
         });
     };
+    /**
+     * generate a new board id
+     */
+    Database.prototype.boardNew = function () {
+        return __awaiter(this, void 0, void 0, function () {
+            var result, newBoard, boardClass, e_3;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        _a.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, axios_1.default.get('board/newid')];
+                    case 1:
+                        result = _a.sent();
+                        if (const_1.axiosActions.isOk(result)) {
+                            newBoard = const_1.axiosActions.data(result);
+                            logging_1.debug(newBoard, 'new board');
+                            boardClass = new board_1.default(newBoard, { isNew: true });
+                            this._boards.push(boardClass);
+                            return [2 /*return*/, boardClass];
+                        }
+                        else {
+                            throw logging_1.newError(const_1.axiosActions.errors(result), 'database.boardNew');
+                        }
+                        return [3 /*break*/, 3];
+                    case 2:
+                        e_3 = _a.sent();
+                        logging_1.error(e_3, 'database.boardNew');
+                        throw logging_1.newError(e_3, 'database.boardNew');
+                    case 3: return [2 /*return*/];
+                }
+            });
+        });
+    };
     Database.prototype.boardCreate = function (boardObj) {
         return __awaiter(this, void 0, void 0, function () {
-            var result, board, boardClass, e_3;
+            var result, board, boardClass, e_4;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -238,13 +271,13 @@ var Database = /** @class */ (function () {
                             return [2 /*return*/, boardClass];
                         }
                         else {
-                            throw logging_1.newError(const_1.axiosActions.errors(result), 'database.boardDelete');
+                            throw logging_1.newError(const_1.axiosActions.errors(result), 'database.boardCreate');
                         }
                         return [3 /*break*/, 3];
                     case 2:
-                        e_3 = _a.sent();
-                        logging_1.error(e_3, 'database.boardCreate');
-                        throw logging_1.newError(e_3, 'database.boardDelete');
+                        e_4 = _a.sent();
+                        logging_1.error(e_4, 'database.boardCreate');
+                        throw logging_1.newError(e_4, 'database.boardCreate');
                     case 3: return [2 /*return*/];
                 }
             });
@@ -256,12 +289,15 @@ var Database = /** @class */ (function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        if (!board.isDirty) return [3 /*break*/, 2];
-                        return [4 /*yield*/, axios_1.default.patch("board/$(board.id}", board.changedData())];
+                        if (!board.isNew) return [3 /*break*/, 1];
+                        return [2 /*return*/, this.boardCreate(board)];
                     case 1:
+                        if (!board.isDirty) return [3 /*break*/, 3];
+                        return [4 /*yield*/, axios_1.default.patch("board/$(board.id}", board.changedData())];
+                    case 2:
                         result = _a.sent();
-                        _a.label = 2;
-                    case 2: return [2 /*return*/];
+                        _a.label = 3;
+                    case 3: return [2 /*return*/];
                 }
             });
         });
@@ -273,8 +309,8 @@ var Database = /** @class */ (function () {
      */
     Database.prototype.boardDelete = function (query) {
         return __awaiter(this, void 0, void 0, function () {
-            var records, _loop_1, this_1, records_1, records_1_1, rec, e_4_1;
-            var e_4, _a;
+            var records, _loop_1, this_1, records_1, records_1_1, rec, e_5_1;
+            var e_5, _a;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -324,14 +360,14 @@ var Database = /** @class */ (function () {
                         return [3 /*break*/, 3];
                     case 6: return [3 /*break*/, 9];
                     case 7:
-                        e_4_1 = _b.sent();
-                        e_4 = { error: e_4_1 };
+                        e_5_1 = _b.sent();
+                        e_5 = { error: e_5_1 };
                         return [3 /*break*/, 9];
                     case 8:
                         try {
                             if (records_1_1 && !records_1_1.done && (_a = records_1.return)) _a.call(records_1);
                         }
-                        finally { if (e_4) throw e_4.error; }
+                        finally { if (e_5) throw e_5.error; }
                         return [7 /*endfinally*/];
                     case 9: return [2 /*return*/, true];
                     case 10: return [2 /*return*/, false];

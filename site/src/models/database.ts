@@ -113,6 +113,27 @@ export default class Database {
     return result;
   }
 
+  /**
+   * generate a new board id
+   */
+  async boardNew() {
+    try {
+      let result = await Axios.get('board/newid');
+      if (axiosActions.isOk(result)) {
+        let newBoard = axiosActions.data(result)
+        debug(newBoard, 'new board')
+        let boardClass = new Board(newBoard, {isNew: true})
+        this._boards.push(boardClass);
+        return boardClass;
+      } else {
+        throw newError(axiosActions.errors(result), 'database.boardNew');
+      }
+    } catch(e) {
+      error(e, 'database.boardNew');
+      throw newError(e, 'database.boardNew');
+    }
+  }
+
   async boardCreate(boardObj) {
     try {
       let result = await Axios.post('board', boardObj);
@@ -122,17 +143,21 @@ export default class Database {
         this._boards.push(boardClass);
         return boardClass;
       } else {
-        throw newError(axiosActions.errors(result), 'database.boardDelete');
+        throw newError(axiosActions.errors(result), 'database.boardCreate');
       }
     } catch(e) {
       error(e, 'database.boardCreate');
-      throw newError(e, 'database.boardDelete');
+      throw newError(e, 'database.boardCreate');
     }
   }
 
   async boardUpdate(board) {
-    if (board.isDirty) {
-      let result = await Axios.patch(`board/$(board.id}`, board.changedData())
+    if (board.isNew) {
+      return this.boardCreate(board)
+    } else {
+      if (board.isDirty) {
+        let result = await Axios.patch(`board/$(board.id}`, board.changedData())
+      }
     }
   }
 

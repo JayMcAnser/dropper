@@ -46,6 +46,10 @@ class ElementInventory extends ElementLayout {
     }
     return this._children;
   }
+
+  get length() {
+    return this.children().length
+  }
 }
 
 export default ElementInventory

@@ -54,7 +54,7 @@ describe('data model', () => {
 
       let board2 = await database.boardById(boardId);
       assert.equal(board2.title, boardName)
-      board.title = 'some change';
+      board.model.title = 'some change';
       assert.isTrue(board.isDirty);
       assert.equal(board2.title, 'some change', 'should refer to the same structure')
       assert.isTrue(board2.isDirty);
@@ -66,6 +66,20 @@ describe('data model', () => {
 
       let board3 = await database.boardById(boardId);
       assert.equal(board3.title, 'some change');
+    })
+
+    it('change trapping board', async () => {
+      let board = await database.boardById(boardId);
+      assert.isDefined(board);
+      assert.isDefined(board.model.title);
+      let title = board.model.title;
+      board.model.title = 'NEW TITLE';
+      await board.save();
+      let db2 = new Database();
+      await db2.load();
+      let boardUpdated = await db2.boardById(boardId);
+      assert.isDefined(board);
+      assert.equal(boardUpdated.title, 'NEW TITLE')
     })
   });
 
@@ -88,7 +102,7 @@ describe('data model', () => {
     });
 
     it('create', async () => {
-      element = await board.elementCreate({type: 'column', key: 'column 1' })
+      element = await board.elementCreate({type: 'column', key: 'createTest' })
       assert.isDefined(element.id);
       assert.equal(element.type,'column');
       // this should send ALL info to the server
@@ -99,18 +113,18 @@ describe('data model', () => {
       let boardUpdated = await db2.boardById(board.id);
       let elm2 = boardUpdated.element(element.id);
       assert.isDefined(elm2.id);
-      assert.equal(elm2.key, 'column 1', 'did save by the save()')
+      assert.equal(elm2.key, 'createTest', 'did save by the save()')
     });
 
     it('find', () => {
       assert.equal(board.elementCount, 1);
-      assert.equal(board.element(element.id).key, 'column 1');
+      assert.equal(board.element(element.id).key, 'createTest');
     })
 
     it('edit', async () => {
       const NEW_TITLE = 'new title'
       let elm = board.element(element.id);
-      elm.title = NEW_TITLE;
+      elm.model.title = NEW_TITLE;
       await board.save();
       // now reload the dataset from disk and request the same info
       let db2 = new Database();
@@ -125,8 +139,8 @@ describe('data model', () => {
       let b2 = await database.boardCreate({name: boardName2, title: 'board 2'})
       let e1 = await b2.elementCreate({type: 'column', key: 'column.1' })
       let e2 = await b2.elementCreate({type: 'column', key: 'column.2' })
-      e1.title = 'some 1';
-      e2.title = 'some 2'
+      e1.model.title = 'some 1';
+      e2.model.title = 'some 2'
       await b2.save();
 
       let db2 = new Database();
@@ -202,7 +216,7 @@ describe('data model', () => {
 
     it('inventory', async() => {
       assert.equal(board.inventory.length, 4);
-      assert.isTrue(board.inventory.findIndex((e) => e.key === 'col1') >= 0)
+      assert.isTrue(board.inventoryElements.findIndex((e) => e.key === 'col1') >= 0)
     })
 
   })

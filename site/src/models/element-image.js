@@ -32,7 +32,7 @@ var ElementImage = /** @class */ (function (_super) {
     };
     Object.defineProperty(ElementImage.prototype, "url", {
         get: function () {
-            return "/file/image/" + this.board.id + "/" + this.id;
+            return process.env.VUE_APP_API_URL + "/file/image/" + this.board.id + "/" + this.id;
         },
         enumerable: false,
         configurable: true

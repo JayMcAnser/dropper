@@ -50,6 +50,12 @@ const routes = [
     name: 'elementView',
     component: () => import(/* webpackChunkName: "element" */ '../pages/element-view.vue')
   },
+  {
+    path: '/search-board',  // if no id, the active is used
+    name: 'searchBoard',
+    component: () => import(/* webpackChunkName: "board" */ '../pages/search-board.vue')
+  },
+
 
   {
     path: '/login',

@@ -29,7 +29,7 @@ class ElementImage extends Element {
   }
 
   get url() {
-    return `/file/image/${this.board.id}/${this.id}`;
+    return `${process.env.VUE_APP_API_URL}/file/image/${this.board.id}/${this.id}`;
   }
 }
 

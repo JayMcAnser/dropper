@@ -7,12 +7,11 @@
         :style="{height: calcHeight}"
     >
       <!-- grow: change with used -->
-      <v-btn value="browse"
-             @click="doClick('browse')"
-      >
-        <span>browse</span>
-        <v-icon>mdi-view-carousel-outline</v-icon>
+      <v-btn @click="doClick('search')">
+        <span>search</span>
+        <v-icon>mdi-file-find-outline</v-icon>
       </v-btn>
+
       <v-btn value="xx">
         <span></span>
         <v-icon></v-icon>

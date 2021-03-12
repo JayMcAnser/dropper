@@ -1,5 +1,6 @@
 <template>
   <v-card>
+    <!--
     <v-toolbar extended>
 
       <v-toolbar-title>{{board.title}}</v-toolbar-title>
@@ -16,29 +17,26 @@
       </v-btn>
 
     </v-toolbar>
+    -->
+
+    <v-text-field
+        dense
+        v-model="filter"
+    >
+    </v-text-field>
+    <v-divider></v-divider>
+
+
+    <v-list>
+      <element-list
+          :elements="elements"
+          @activate="activateElement"
+      >
+      </element-list>
+    </v-list>
     <dialog-element></dialog-element>
     <dialog-element-new></dialog-element-new>
 
-    <v-card-text
-        v-show="showFilter"
-    >
-      <v-text-field
-          dense
-          v-model="filter"
-      >
-      </v-text-field>
-    </v-card-text>
-    <v-divider></v-divider>
-
-    <v-card>
-      <v-list>
-        <element-list
-            :elements="elements"
-            @activate="activateElement"
-        >
-        </element-list>
-      </v-list>
-    </v-card>
   </v-card>
 </template>
 
@@ -69,7 +67,8 @@ export default {
   },
   props: {
     board: {
-      type: Object
+      type: Object,
+      required: true
     }
   },
   computed: {
